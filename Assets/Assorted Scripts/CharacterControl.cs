@@ -26,9 +26,7 @@ namespace PlayerControl
         }
 
         //Movement related
-        private static float MoveMultiplierInterpolate = 0.5f;      //MoveMultiplier lerps between different movement speeds by this
         public static KeyCode KeyCodeCrouch = KeyCode.LeftShift;
-        private CollisionFlags CollisionFlags;
 
         DoubleTapHandler DoubleTapW = new DoubleTapHandler(KeyCode.W);
 
@@ -46,7 +44,6 @@ namespace PlayerControl
         public GameObject DebugMenu;
         public Text DebugTextMoveVector;
 
-
         void Start()
         {
             PlayerRigidBody = GetComponent<Rigidbody>();
@@ -56,41 +53,94 @@ namespace PlayerControl
             PlayerTransform = GetComponent<Transform>();
             PlayerBounds = GetComponent<Collider>().bounds;
         }
-        
+
         void Update()
         {
-
             //DEBUG
             if (DebugToggle.isOn) 
             {
                 DebugMenu.SetActive(true);
-                DebugTextMoveVector.text = MoveVector.Unrotated.ToString();
+                DebugTextMoveVector.text = MoveVector.UnrotatedInput.ToString() + "\n" + (MoveVector.CalculatedXZ + MoveVector.CalculatedY).ToString() + "\n" + PlayerRigidBody.velocity.ToString();
             }
             else
             {
                 DebugMenu.SetActive(false);
             }
-            
-            SetPlayerState();
+
+            //Reload scene
+            if (Input.GetKey(KeyCode.R))
+            {
+                SceneManager.LoadScene(SceneManager.GetActiveScene().buildIndex);
+            }
         }
 
         void FixedUpdate()
         {
-            MoveVector.CalculateRaw();
-            MoveVector.CalculateRotated();
+            MoveVector.CalculateXZ(PlayerRigidBody.velocity);
+            MoveVector.CalculateY(PlayerRigidBody.velocity.y);
 
-            Debug.DrawRay(PlayerTransform.position, Vector3.down, Color.red);
-            PlayerRigidBody.velocity = new Vector3(MoveVector.Rotated.x, UpdateY(), MoveVector.Rotated.z);
-
-            //Debug.Log(FindFloorAverageDistance(4, 2f, 0.5f));
+            PlayerRigidBody.velocity = MoveVector.CalculatedXZ + MoveVector.CalculatedY;
+            
         }
 
-        void OnTriggerEnter(Collider TriggerCollider)
-        //Reload scene if fallen offstage
+        public static class MoveVector
         {
-            if (TriggerCollider.tag == "Kill")  //organise tag names
+            public static Vector3 UnrotatedInput = Vector3.zero;
+            public static Vector3 RotatedInput = Vector3.zero;
+            public static Vector3 CalculatedXZ = Vector3.zero;
+            public static Vector3 CalculatedY = Vector3.zero;
+            public static float MaxMoveMagnitude = 25f;
+            public static float Friction = 1.8f;
+            public static float MoveMultiplier = 3f;
+            public static float Gravity = -35f;
+
+            /// <summary>
+            /// 
+            /// </summary>
+            public static void CalculateXZ(Vector3 _velocity)
             {
-                SceneManager.LoadScene(SceneManager.GetActiveScene().buildIndex);
+                float _horizontal = Input.GetAxisRaw("Horizontal");
+                float _vertical = Input.GetAxisRaw("Vertical");
+                Vector3 _input = new Vector3(_horizontal, 0f, _vertical).normalized;
+
+                UnrotatedInput = _input * MoveMultiplier;
+                RotatedInput = Quaternion.Euler(0f, CameraFocusTransform.rotation.eulerAngles.y, 0f) * UnrotatedInput;
+
+                CalculatedXZ = Vector3.ClampMagnitude(_velocity - Vector3.ClampMagnitude(_velocity, Friction) + RotatedInput, MaxMoveMagnitude);
+            }
+
+            /// <summary>
+            /// 
+            /// </summary>
+            public static void CalculateY(float _VelocityY)
+            {
+                if (CheckGrounded())
+                {
+                    CalculatedY.y = 0f;
+                }
+                else
+                {
+                    CalculatedY.y = _VelocityY + (-30f * Time.deltaTime);
+                    Debug.Log(_VelocityY + (-30f * Time.deltaTime));
+                }
+            }
+
+        }
+
+        /// <summary>
+        /// Sends a spherecast downwards and returns true if it hits anything
+        /// </summary>
+        public static bool CheckGrounded()
+        {
+            Ray ray = new Ray(PlayerTransform.position, new Vector3(0f, -1f, 0f));
+
+            if (Physics.SphereCast(ray, 0.5f, 0.8f))
+            {
+                return true;
+            }
+            else
+            {
+                return false;
             }
         }
 
@@ -130,38 +180,10 @@ namespace PlayerControl
             
         }
 
-
-        public static float gravity = -50f;
-        public static bool CheckGrounded()
-        {
-            Ray ray = new Ray(PlayerTransform.position, new Vector3(0f, -1f, 0f));
-
-            if (Physics.SphereCast(ray, 0.5f, 0.5f))
-            {
-                return true;
-            }
-            else
-            {
-                return false;
-            }
-        }
-
-        public static float UpdateY()
-        {
-            if (CheckGrounded())
-            {
-                return 0f;
-            }
-            else
-            {
-                return PlayerRigidBody.velocity.y + (Time.deltaTime * gravity);
-            }
-        }
-
         /// <summary>
         /// Makes a circle of rays downward around the player. Returns the average position of all the colliders below
         /// </summary>
-        public static Vector3 FindFloorAverageDistance(int _NumberofSamples, float _RaycastLength, float _DistFromCentre) //convert to vector3
+        public static Vector3 FindFloorAverageDistance(int _NumberofSamples, float _RaycastLength, float _DistFromCentre)
         {
             Vector3 CumulativeFloorPosition = Vector3.zero;
 
@@ -170,7 +192,7 @@ namespace PlayerControl
                 CumulativeFloorPosition = hit.point;
             }
 
-            int NumOfRayhits = 0;
+            //int NumOfRayhits = 0;
 
             for (int i = 1; i < _NumberofSamples + 1; i++)
             {
@@ -186,64 +208,6 @@ namespace PlayerControl
             }
 
             return CumulativeFloorPosition / _NumberofSamples;
-        }
-
-        public static class MoveVector
-        {
-            public static Vector3 Unrotated = Vector3.zero;
-            public static Vector3 Rotated = Vector3.zero;
-
-            /// <summary>
-            /// Calculates the unrotated XZ vector from input axis
-            /// </summary>
-            public static void CalculateRaw()
-            {
-                float MaxMoveMagnitude = 20f;
-                float MoveMultiplier = 3f;
-                float friction = 1.8f;
-
-                float _horizontal = Input.GetAxisRaw("Horizontal");
-                float _vertical = Input.GetAxisRaw("Vertical");
-                Vector3 _input = new Vector3(_horizontal, 0f, _vertical).normalized;
-
-                //Changing MoveVector directly might lead to some jank
-                if (_input.x == 0 && Unrotated.x != 0)
-                {
-                    if (Mathf.Abs(Unrotated.x) - friction < 0)
-                    {
-                        //_input.x = -1 * MoveVector.x;
-                        Unrotated.x = 0f;
-                    }
-                    else
-                    {
-                        //_input.x = Mathf.Sign(MoveVector.x) * -1 * friction;
-                        Unrotated.x += Mathf.Sign(Unrotated.x) * -1 * friction;
-                    }
-                }
-                if (_input.z == 0 && Unrotated.z != 0)
-                {
-                    if (Mathf.Abs(Unrotated.z) - friction < 0)
-                    {
-                        //_input.z = -1 * MoveVector.y;
-                        Unrotated.z = 0f;
-                    }
-                    else
-                    {
-                        //_input.z = Mathf.Sign(MoveVector.z) * -1 * friction;
-                        Unrotated.z += Mathf.Sign(Unrotated.z) * -1 * friction;
-                    }
-                }
-
-                Unrotated = Vector3.ClampMagnitude(Unrotated + (_input * MoveMultiplier), MaxMoveMagnitude);
-            }
-
-            /// <summary>
-            /// Rotates the raw input vector along y axis by the camera's y rotation and stores the result as Rotated
-            /// </summary>
-            public static void CalculateRotated()
-            {
-                Rotated = Quaternion.Euler(0f, CameraFocusTransform.rotation.eulerAngles.y, 0f) * Unrotated;
-            }
         }
     }
 
