@@ -7,7 +7,7 @@ public class CameraController : MonoBehaviour
 {
     private float CameraOffsetX = 0f;
     private float CameraOffsetY = 0f;
-    private float CameraOffsetZ = -15f; //make sure its negative
+    private float CameraOffsetZ = -15f;
 
     private float CameraFocusPosLerpXZ = 1f;
     private float CameraFocusPosLerpY = 0.5f;
@@ -53,7 +53,7 @@ public class CameraController : MonoBehaviour
         }
 
         //AngleZoom();
-        //CameraBackToCollider(CameraTransform);
+        CameraBackToCollider(CameraTransform);
 
     }
 
@@ -134,7 +134,7 @@ public class CameraController : MonoBehaviour
         //If colliding with "Terrain" tag, move _CameraTransform to the distance of the collision
         if (RayHit.collider.CompareTag("Terrain") && RayHit.distance < Mathf.Abs(CameraOffsetZ))
         {
-            _CameraTransform.localPosition = new Vector3(CameraOffsetX, CameraOffsetY, -RayHit.distance + 0.1f); //change the float
+            _CameraTransform.localPosition = new Vector3(CameraOffsetX, CameraOffsetY, -RayHit.distance -0.5f); //change the float
         }
         else
         {

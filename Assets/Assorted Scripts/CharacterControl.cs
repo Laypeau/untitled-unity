@@ -26,19 +26,25 @@ namespace PlayerControl
         }
 
         //Movement related
+        public MovementVectorHandler MoveVector = new MovementVectorHandler();
         private static float MoveMultiplierInterpolate = 0.5f;      //MoveMultiplier lerps between different movement speeds by this
         public static KeyCode KeyCodeCrouch = KeyCode.LeftShift;
+        public static KeyCode KeyCodeJump = KeyCode.Space;
+        private static float GravityMultiplier = 4f;
+        public static float JumpForce = 20f;
+        public static float SlopeMagic = -15f;      //Stick to downward slopes. Remember to change i
+        public static bool JumpCancellingEnabled = false;       //Kinda clunky
         private CollisionFlags CollisionFlags;
 
-        DoubleTapHandler DoubleTapW = new DoubleTapHandler(KeyCode.W);
+        private JumpHandler Jump = new JumpHandler();
+
+        private DoubleTapHandler DoubleTapW = new DoubleTapHandler(KeyCode.W);
 
         //ObjectReferences (Set in Start)
+        private static CharacterController CharacterController;
         private static CameraController CameraControlScript;
         private static Transform CameraFocusTransform;
-        public static GameObject MenuController;
-        public static Rigidbody PlayerRigidBody;
-        public static Transform PlayerTransform;
-        public static Bounds PlayerBounds;
+        private static GameObject MenuController;
 
         //DEBUG
         //Remember to set in the inspector
@@ -49,12 +55,10 @@ namespace PlayerControl
 
         void Start()
         {
-            PlayerRigidBody = GetComponent<Rigidbody>();
+            CharacterController = GetComponent<CharacterController>();
             CameraFocusTransform = GameObject.Find("CameraFocus").GetComponent<Transform>();
             CameraControlScript = GameObject.Find("CameraFocus").GetComponent<CameraController>();
-            MenuController = GameObject.Find("Canvas").GetComponent<GameObject>();
-            PlayerTransform = GetComponent<Transform>();
-            PlayerBounds = GetComponent<Collider>().bounds;
+            MenuController = GameObject.Find("Canvas").GetComponent<GameObject>(); 
         }
         
         void Update()
@@ -72,17 +76,14 @@ namespace PlayerControl
             }
             
             SetPlayerState();
-        }
 
-        void FixedUpdate()
-        {
             MoveVector.CalculateRaw();
-            MoveVector.CalculateRotated();
 
-            Debug.DrawRay(PlayerTransform.position, Vector3.down, Color.red);
-            PlayerRigidBody.velocity = new Vector3(MoveVector.Rotated.x, UpdateY(), MoveVector.Rotated.z);
+            MoveVector.CalculateRotated(CameraFocusTransform.rotation.eulerAngles.y);
 
-            //Debug.Log(FindFloorAverageDistance(4, 2f, 0.5f));
+            //MoveVector.y = Jump.SetJumpInput(MoveVector.y);
+
+            CollisionFlags = CharacterController.Move(MoveVector.Rotated * Time.deltaTime);
         }
 
         void OnTriggerEnter(Collider TriggerCollider)
@@ -116,7 +117,6 @@ namespace PlayerControl
                 PlayerState[0] = (int)PlayerStateGrounded.Idle;
             }
 
-            /*
             if (Jump.InAir)
             {
                 PlayerState[1] = (int)PlayerStateAerial.InAir;
@@ -125,125 +125,169 @@ namespace PlayerControl
             {
                 PlayerState[1] = (int)PlayerStateAerial.Grounded;
             }
-            */
 
             
         }
 
-
-        public static float gravity = -50f;
-        public static bool CheckGrounded()
+        /// <summary>
+        /// Handles everything related to jumping
+        /// </summary>
+        public class JumpHandler
         {
-            Ray ray = new Ray(PlayerTransform.position, new Vector3(0f, -1f, 0f));
+            public bool InAir = false;
+            public bool WasGrounded = true;
+            public float TerminalVelocity = 90f;
+            public int MaxMidairJumps = 1;   //This is the important variable
+            private int _CurrentMidairJumps = 1;
+            public int CurrentMidairJumps
+            //adds a set property that doesn't allow for invalid CurrentMidairJumps
+            {
+                get
+                {
+                    return _CurrentMidairJumps;
+                }
+                set
+                {
+                    if (value > MaxMidairJumps || value < 0)
+                    {
+                        _CurrentMidairJumps = MaxMidairJumps;
+                    }
+                    else
+                    {
+                        _CurrentMidairJumps = value;
+                    }
+                }
+            }
 
-            if (Physics.SphereCast(ray, 0.5f, 0.5f))
+            public float SetJumpInput(float _VectorY)    //Could probably use out or ref keywords, but I don't know how
+            //Takes an input and uses it to find if it should be replaced by a jump force
             {
-                return true;
+                if (CharacterController.isGrounded)
+                {
+                    if (Input.GetKeyDown(KeyCodeJump))
+                    {
+                        //Do things related to jumping off ground
+                        WasGrounded = false; //Don't break the jump
+                        InAir = true;
+                        return JumpForce;
+                    }
+                    else
+                    {
+                        if (!WasGrounded) //Do things related to just landing on the ground
+                        {
+                            WasGrounded = true;
+                            CurrentMidairJumps = MaxMidairJumps;    //Add VFX
+                            InAir = false;
+                            //CameraControlScript.TraumaDelta += Mathf.Abs(MoveVector.Unrotated.y)/10;
+                        }
+                        //Do things every frame related to being on ground
+                        return SlopeMagic;
+                    }
+                }
+                else
+                {
+                    if (CurrentMidairJumps > 0 && Input.GetKeyDown(KeyCodeJump))
+                    {
+                        CurrentMidairJumps -= 1;
+                        //Do things related to jumping midair
+                        WasGrounded = false;
+                        return JumpForce;
+                    }
+
+                    //If pressing jump key AND not _VectorY is between 0 and JumpForce-2 AND JumpCancellingEnabled
+                    if (Input.GetKeyUp(KeyCodeJump) && _VectorY > 0 && _VectorY < JumpForce-2 && JumpCancellingEnabled)    //Use predefined bounds
+                    {
+                        WasGrounded = false;
+                        return 0;
+                    }
+
+                    if (WasGrounded)
+                    {
+                        WasGrounded = false;
+                        return 0f;
+                    }
+                    else
+                    {
+                        if (_VectorY >= TerminalVelocity)
+                        {
+                            return TerminalVelocity;
+                        }
+                        else
+                        {
+                            return _VectorY + (Physics.gravity.y * GravityMultiplier * Time.deltaTime);
+                        }
+                    }
+                }
             }
-            else
-            {
-                return false;
-            }
+
+            //public static void PlayJumpSound()
         }
+    }
 
-        public static float UpdateY()
+    /// <summary>
+    /// Contains the movement vector and all it's components
+    /// </summary>
+    public class MovementVectorHandler
+    {
+        public Vector3 Unrotated = Vector3.zero;
+        public Vector3 Rotated = Vector3.zero;
+
+        public static float CrouchSpeed = 10f;
+        public static float WalkSpeed = 20f;
+        public static float DashSpeed = 35f;
+
+        /// <summary>
+        /// Calcucates the unrotated XZ vector from input axis
+        /// </summary>
+        public void CalculateRaw()
         {
-            if (CheckGrounded())
+            float MaxMoveMagnitude = 20f;
+            //float MoveMultiplierWalk = 10f;
+            //float MoveMultiplierCrouch = 5f;
+            float friction = 1.8f;
+
+            float _horizontal = Input.GetAxisRaw("Horizontal");
+            float _vertical = Input.GetAxisRaw("Vertical");
+            Vector3 _input = new Vector3(_horizontal, 0f, _vertical).normalized;
+
+            //Apply friction
+            //Changing MoveVector directly might lead to some jank
+            if (_input.x == 0 && Unrotated.x != 0)
             {
-                return 0f;
+                if (Mathf.Abs(Unrotated.x) - friction < 0)
+                {
+                    //_input.x = -1 * MoveVector.x;
+                    Unrotated.x = 0f;
+                }
+                else
+                {
+                    //_input.x = Mathf.Sign(MoveVector.x) * -1 * friction;
+                    Unrotated.x += Mathf.Sign(Unrotated.x) * -1 * friction;
+                }
             }
-            else
+            if (_input.z == 0 && Unrotated.z != 0)
             {
-                return PlayerRigidBody.velocity.y + (Time.deltaTime * gravity);
+                if (Mathf.Abs(Unrotated.z) - friction < 0)
+                {
+                    //_input.z = -1 * MoveVector.y;
+                    Unrotated.z = 0f;
+                }
+                else
+                {
+                    //_input.z = Mathf.Sign(MoveVector.z) * -1 * friction;
+                    Unrotated.z += Mathf.Sign(Unrotated.z) * -1 * friction;
+                }
             }
+
+            Unrotated = Vector3.ClampMagnitude((_input * 3f) + Unrotated, MaxMoveMagnitude);
         }
 
         /// <summary>
-        /// Makes a circle of rays downward around the player. Returns the average position of all the colliders below
+        /// Rotates the raw input vector along y axis by the input and stores the result in Rotated
         /// </summary>
-        public static Vector3 FindFloorAverageDistance(int _NumberofSamples, float _RaycastLength, float _DistFromCentre) //convert to vector3
+        public void CalculateRotated(float Rotation)
         {
-            Vector3 CumulativeFloorPosition = Vector3.zero;
-
-            if (Physics.Raycast(PlayerTransform.position, Vector3.down, out RaycastHit hit, _RaycastLength))
-            {
-                CumulativeFloorPosition = hit.point;
-            }
-
-            int NumOfRayhits = 0;
-
-            for (int i = 1; i < _NumberofSamples + 1; i++)
-            {
-                Quaternion rotation = Quaternion.Euler(0f,(360f / _NumberofSamples) * i, 0f);
-                Ray ray = new Ray(PlayerTransform.position + (rotation * new Vector3(0f, 0f, _DistFromCentre)), Vector3.down);
-
-                Debug.DrawRay(PlayerTransform.position + (rotation * new Vector3(0f, 0f, _DistFromCentre)), Vector3.down * _RaycastLength, Color.magenta);
-
-                if (Physics.Raycast(ray, out RaycastHit RayHit, _RaycastLength))
-                {
-                    CumulativeFloorPosition += RayHit.point;
-                }
-            }
-
-            return CumulativeFloorPosition / _NumberofSamples;
-        }
-
-        public static class MoveVector
-        {
-            public static Vector3 Unrotated = Vector3.zero;
-            public static Vector3 Rotated = Vector3.zero;
-
-            /// <summary>
-            /// Calculates the unrotated XZ vector from input axis
-            /// </summary>
-            public static void CalculateRaw()
-            {
-                float MaxMoveMagnitude = 20f;
-                float MoveMultiplier = 3f;
-                float friction = 1.8f;
-
-                float _horizontal = Input.GetAxisRaw("Horizontal");
-                float _vertical = Input.GetAxisRaw("Vertical");
-                Vector3 _input = new Vector3(_horizontal, 0f, _vertical).normalized;
-
-                //Changing MoveVector directly might lead to some jank
-                if (_input.x == 0 && Unrotated.x != 0)
-                {
-                    if (Mathf.Abs(Unrotated.x) - friction < 0)
-                    {
-                        //_input.x = -1 * MoveVector.x;
-                        Unrotated.x = 0f;
-                    }
-                    else
-                    {
-                        //_input.x = Mathf.Sign(MoveVector.x) * -1 * friction;
-                        Unrotated.x += Mathf.Sign(Unrotated.x) * -1 * friction;
-                    }
-                }
-                if (_input.z == 0 && Unrotated.z != 0)
-                {
-                    if (Mathf.Abs(Unrotated.z) - friction < 0)
-                    {
-                        //_input.z = -1 * MoveVector.y;
-                        Unrotated.z = 0f;
-                    }
-                    else
-                    {
-                        //_input.z = Mathf.Sign(MoveVector.z) * -1 * friction;
-                        Unrotated.z += Mathf.Sign(Unrotated.z) * -1 * friction;
-                    }
-                }
-
-                Unrotated = Vector3.ClampMagnitude(Unrotated + (_input * MoveMultiplier), MaxMoveMagnitude);
-            }
-
-            /// <summary>
-            /// Rotates the raw input vector along y axis by the camera's y rotation and stores the result as Rotated
-            /// </summary>
-            public static void CalculateRotated()
-            {
-                Rotated = Quaternion.Euler(0f, CameraFocusTransform.rotation.eulerAngles.y, 0f) * Unrotated;
-            }
+            Rotated = Quaternion.Euler(0f, Rotation, 0f) * Unrotated;
         }
     }
 
@@ -254,7 +298,7 @@ namespace PlayerControl
     {
         private float DoubleTapSpeed = 0.5f;
         private bool DoubleTap = false;
-        private float TimeOfFirstRelease = 0f;
+        private float TimeOfFirstPress = 0f;
         private KeyCode InputKeyCode;
 
         /// <summary>The key that this particular instance will keep track of</summary>
@@ -275,12 +319,12 @@ namespace PlayerControl
             if (Input.GetKeyUp(InputKeyCode))
             {
                 DoubleTap = false;
-                TimeOfFirstRelease = Time.time;
+                TimeOfFirstPress = Time.time;
             }
 
             if (Input.GetKeyDown(InputKeyCode))
             {
-                if (Time.time - TimeOfFirstRelease <= DoubleTapSpeed)
+                if (Time.time - TimeOfFirstPress <= DoubleTapSpeed)
                 {
                     DoubleTap = true;
                 }
