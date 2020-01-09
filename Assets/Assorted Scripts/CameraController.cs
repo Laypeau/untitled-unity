@@ -7,7 +7,7 @@ public class CameraController : MonoBehaviour
 {
     private float CameraOffsetX = 0f;
     private float CameraOffsetY = 0f;
-    private float CameraOffsetZ = -15f; //make sure its negative
+    private float CameraOffsetZ = 0f; //make sure its negative
 
     private float CameraFocusPosLerpXZ = 1f;
     private float CameraFocusPosLerpY = 0.5f;
@@ -20,7 +20,6 @@ public class CameraController : MonoBehaviour
     [HideInInspector] public float TraumaDelta = 0f;
     private readonly float TraumaDecrement = 0.15f;
     private float ShakeSpeed = 10f;
-    private readonly float ShakeMaxZ = 45f;     //In degrees
 
     //Component references
     [SerializeField] private GameObject PlayerGameObject;
@@ -62,9 +61,10 @@ public class CameraController : MonoBehaviour
         DoCameraShake();    //Put in lateupdate so any other script wanting to change the trauma value can do it in Update and have the camera rotate the same frame
     }
 
-
+    /// <summary>
+    /// Does the references to CameraFocusTransform, CameraTransform, PlayerGameobject CameraCamera and MenuManagementPause
+    /// </summary>
     public void Initialise()
-    //Does the references to CameraFocusTransform, CameraTransform, PlayerGameobject CameraCamera and MenuManagementPause
     {
         PlayerGameObject = GameObject.Find("Player");
         CameraFocusTransform = GetComponent<Transform>();
@@ -74,8 +74,10 @@ public class CameraController : MonoBehaviour
         MenuManagementPause = GameObject.Find("Canvas").GetComponent<MenuManagementPause>();
     }
 
+    /// <summary>
+    /// Locks the cursor depending on IsPaused in the MenuManagementPause script is true or not
+    /// </summary>
     public void UpdateCursorLock()
-    //Locks the cursor depending on IsPaused in the MenuManagementPause script is true or not
     {
         if (MenuManagementPause.IsPaused)
         {
@@ -91,8 +93,10 @@ public class CameraController : MonoBehaviour
         }
     }
 
+    /// <summary>
+    /// Lerps the camera focus to the input transform by independent Y and XZ values
+    /// </summary>
     public void MoveToFocus(Transform _InputTransform)
-    //Lerps the camera focus to the input transform by independent Y and XZ values
     {
         float _CurX = CameraFocusTransform.position.x;
         float _CurY = CameraFocusTransform.position.y;
@@ -105,8 +109,10 @@ public class CameraController : MonoBehaviour
         CameraFocusTransform.position = new Vector3(_OutX, _OutY, _OutZ);
     }
 
+    /// <summary>
+    /// Rotates CameraFocusTransform by mouse movement * sensitivity
+    /// </summary>
     public void RotateByMouse(Transform _FocusTransform)
-    //Rotates CameraFocusTransform by mouse movement * sensitivity
     {
         Quaternion TargetPitch = Quaternion.Euler(Input.GetAxis("Mouse Y") * SensitivityY, 0f,0f);
         Quaternion TargetYaw = Quaternion.Euler(0f, Input.GetAxis("Mouse X") * SensitivityX, 0f);
@@ -151,8 +157,11 @@ public class CameraController : MonoBehaviour
         Trauma = Mathf.Clamp(Trauma + TraumaDelta, 0f, 10f);
         TraumaDelta = 0;
 
-        float _Shake = ShakeMaxZ * (Mathf.Pow(Trauma, 2f) / 100) * (Mathf.PerlinNoise(69f, Time.time * ShakeSpeed) - 0.5f);
-        CameraTransform.localRotation = Quaternion.Euler(0f, 0f, _Shake);
+        //ranges from -0.5 to 0.5
+        float _ShakeX = (Mathf.Pow(Trauma, 2f) / 100) * (Mathf.PerlinNoise(69f, Time.time * ShakeSpeed) - 0.5f);
+        float _ShakeY = (Mathf.Pow(Trauma, 2f) / 100) * (Mathf.PerlinNoise(420f, Time.time * ShakeSpeed) - 0.5f);
+
+        CameraTransform.localPosition = new Vector3(_ShakeX, _ShakeY, 0f);
 
         if (Trauma - TraumaDecrement * Time.timeScale <= 0)
         {

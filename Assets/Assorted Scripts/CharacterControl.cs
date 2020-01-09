@@ -28,6 +28,14 @@ namespace PlayerControl
         //Movement related
         public static KeyCode KeyCodeCrouch = KeyCode.LeftShift;
 
+        SpringJoint PlayerSpringJoint;
+        SpringJoint PlayerSpringJoint2;
+
+        LineRenderer line;
+        public Vector3[] linepos = new Vector3[2];
+        LineRenderer line2;
+        public Vector3[] linepos2 = new Vector3[2];
+
         DoubleTapHandler DoubleTapW = new DoubleTapHandler(KeyCode.W);
 
         //ObjectReferences (Set in Start)
@@ -36,7 +44,6 @@ namespace PlayerControl
         public static GameObject MenuController;
         public static Rigidbody PlayerRigidBody;
         public static Transform PlayerTransform;
-        public static Bounds PlayerBounds;
 
         //DEBUG
         //Remember to set in the inspector
@@ -51,7 +58,9 @@ namespace PlayerControl
             CameraControlScript = GameObject.Find("CameraFocus").GetComponent<CameraController>();
             MenuController = GameObject.Find("Canvas").GetComponent<GameObject>();
             PlayerTransform = GetComponent<Transform>();
-            PlayerBounds = GetComponent<Collider>().bounds;
+
+            line = GetComponent<LineRenderer>();
+            line2 = CameraFocusTransform.gameObject.GetComponent<LineRenderer>(); //just stick it on the camera lol
         }
 
         void Update()
@@ -60,7 +69,7 @@ namespace PlayerControl
             if (DebugToggle.isOn) 
             {
                 DebugMenu.SetActive(true);
-                DebugTextMoveVector.text = MoveVector.UnrotatedInput.ToString() + "\n" + (MoveVector.CalculatedXZ + MoveVector.CalculatedY).ToString() + "\n" + PlayerRigidBody.velocity.ToString();
+                DebugTextMoveVector.text = MoveVector.UnrotatedInput.ToString() + "\n" + PlayerRigidBody.velocity.ToString();
             }
             else
             {
@@ -72,27 +81,94 @@ namespace PlayerControl
             {
                 SceneManager.LoadScene(SceneManager.GetActiveScene().buildIndex);
             }
+
+            Ray qwasdf = new Ray(transform.position, CameraFocusTransform.rotation * Vector3.forward);
+
+            if (Input.GetMouseButtonDown(0))
+            {
+                if (Physics.Raycast(qwasdf, out RaycastHit jkl, 500f))
+                {
+                    PlayerSpringJoint = gameObject.AddComponent<SpringJoint>();
+                    PlayerSpringJoint.autoConfigureConnectedAnchor = false;
+                    PlayerSpringJoint.spring = 500f;
+                    PlayerSpringJoint.damper = 500;
+                    //from (local)
+                    PlayerSpringJoint.anchor = new Vector3(0f, 1f, 0f);
+                    //to (world)
+                    PlayerSpringJoint.connectedAnchor = jkl.point;
+                    PlayerSpringJoint.minDistance = 3;
+                    PlayerSpringJoint.maxDistance = 6;
+                    PlayerSpringJoint.tolerance = 3;
+                }
+            }
+            if (Input.GetMouseButtonUp(0))
+            {
+                Destroy(PlayerSpringJoint);
+            }
+
+            if (Input.GetMouseButtonDown(1))
+            {
+                if (Physics.Raycast(qwasdf, out RaycastHit fgh, 500f))
+                {
+                    PlayerSpringJoint2 = gameObject.AddComponent<SpringJoint>();
+                    PlayerSpringJoint2.autoConfigureConnectedAnchor = false;
+                    PlayerSpringJoint2.spring = 500;
+                    PlayerSpringJoint2.damper = 500;
+                    //from (local)
+                    PlayerSpringJoint2.anchor = new Vector3(0f, 1f, 0f);
+                    //to (world)
+                    PlayerSpringJoint2.connectedAnchor = fgh.point;
+                    PlayerSpringJoint2.minDistance = 3;
+                    PlayerSpringJoint2.maxDistance = 6f;
+                    PlayerSpringJoint2.tolerance = 3;
+                }
+            }
+            if (Input.GetMouseButtonUp(1))
+            {
+                Destroy(PlayerSpringJoint2);
+            }
+
+            linepos[0] = PlayerRigidBody.transform.position + new Vector3(0f, -0.2f, 0f) + (CameraFocusTransform.rotation * new Vector3(-0.5f, 0f, 0.5f));
+            linepos[1] = PlayerSpringJoint.connectedAnchor;
+            line.SetPositions(linepos);
+
+            linepos2[0] = PlayerRigidBody.transform.position + new Vector3(0f, -0.2f, 0f) + (CameraFocusTransform.rotation * new Vector3(0.5f, 0f, 0.5f));
+            linepos2[1] = PlayerSpringJoint2.connectedAnchor;
+            line2.SetPositions(linepos2);
         }
 
         void FixedUpdate()
         {
             MoveVector.CalculateXZ(PlayerRigidBody.velocity);
-            MoveVector.CalculateY(PlayerRigidBody.velocity.y);
 
-            PlayerRigidBody.velocity = MoveVector.CalculatedXZ + MoveVector.CalculatedY;
-            
+            Vector3 XZvel = new Vector3(PlayerRigidBody.velocity.x, 0f, PlayerRigidBody.velocity.z);
+            //Decrement by friction
+            PlayerRigidBody.AddForce(-Vector3.ClampMagnitude(XZvel, 2f), ForceMode.VelocityChange);
+            //Add rotated
+            PlayerRigidBody.AddForce(MoveVector.RotatedInput, ForceMode.VelocityChange);
+            //Clamp XZ magnitude
+            PlayerRigidBody.velocity = new Vector3(0f, PlayerRigidBody.velocity.y, 0f) + Vector3.ClampMagnitude(new Vector3(PlayerRigidBody.velocity.x, 0f, PlayerRigidBody.velocity.z), MoveVector.MaxMoveMagnitude);
+
+            //Check jump
+            if (Input.GetKeyDown(KeyCode.Space))
+            {
+                if (CheckGrounded())
+                {
+                    PlayerRigidBody.AddForce(new Vector3(0f, 20f, 0f), ForceMode.VelocityChange);
+                }
+            }
+
+
         }
 
         public static class MoveVector
         {
-            public static Vector3 UnrotatedInput = Vector3.zero;
-            public static Vector3 RotatedInput = Vector3.zero;
-            public static Vector3 CalculatedXZ = Vector3.zero;
-            public static Vector3 CalculatedY = Vector3.zero;
-            public static float MaxMoveMagnitude = 25f;
+            public static Vector3 UnrotatedInput;
+            public static Vector3 RotatedInput;
+            public static float MaxMoveMagnitude = 18f;
             public static float Friction = 1.8f;
             public static float MoveMultiplier = 3f;
-            public static float Gravity = -35f;
+            public static float Gravity = -1.8f;
 
             /// <summary>
             /// 
@@ -105,26 +181,7 @@ namespace PlayerControl
 
                 UnrotatedInput = _input * MoveMultiplier;
                 RotatedInput = Quaternion.Euler(0f, CameraFocusTransform.rotation.eulerAngles.y, 0f) * UnrotatedInput;
-
-                CalculatedXZ = Vector3.ClampMagnitude(_velocity - Vector3.ClampMagnitude(_velocity, Friction) + RotatedInput, MaxMoveMagnitude);
             }
-
-            /// <summary>
-            /// 
-            /// </summary>
-            public static void CalculateY(float _VelocityY)
-            {
-                if (CheckGrounded())
-                {
-                    CalculatedY.y = 0f;
-                }
-                else
-                {
-                    CalculatedY.y = _VelocityY + (-30f * Time.deltaTime);
-                    Debug.Log(_VelocityY + (-30f * Time.deltaTime));
-                }
-            }
-
         }
 
         /// <summary>
