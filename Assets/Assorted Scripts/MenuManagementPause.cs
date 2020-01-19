@@ -7,6 +7,12 @@ public class MenuManagementPause : MonoBehaviour
     public bool IsPaused = false;
     public KeyCode KeyCodePause = KeyCode.Escape;
 
+    void Start()
+    {
+        ////////////////////////////////////Please figure out why this is required
+        ResumeGame();
+    }
+
     void Update()
     {
         if (Input.GetKeyDown(KeyCodePause))
