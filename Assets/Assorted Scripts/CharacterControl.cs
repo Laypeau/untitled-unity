@@ -41,6 +41,7 @@ namespace PlayerControl
 
         void Update()
         {
+            /*
             //DEBUG
             if (DebugToggle.isOn) 
             {
@@ -51,13 +52,14 @@ namespace PlayerControl
             {
                 DebugMenu.SetActive(false);
             }
+            */
 
             //Reload scene
             if (Input.GetKey(KeyCode.R))
             {
                 SceneManager.LoadScene(SceneManager.GetActiveScene().buildIndex);
             }
-
+            
             //jump
             if (CheckGrounded() && Input.GetKeyDown(KeyCode.Space))
             {
@@ -67,7 +69,6 @@ namespace PlayerControl
             Ray PlayerDirection = new Ray(transform.position, CameraFocusTransform.rotation * Vector3.forward);
             if (Input.GetMouseButtonDown(0) && Physics.SphereCast(PlayerDirection, 0.3f, out RaycastHit RayHit, 40f))
             {
-                Debug.Log("Input registered and valid");
                 if (RayHit.rigidbody == null)
                 {
                     CreateStaticSpringJoint(out PlayerSpringJoint, RayHit);
@@ -78,27 +79,36 @@ namespace PlayerControl
                     CreateRigidBodySpringJoint(out PlayerSpringJoint, RayHit);
                 }
             }
-            if (Input.GetMouseButtonUp(0)) // || (PlayerRigidBody.position - PlayerSpringJoint.connectedAnchor).magnitude <= 2f)
+            if (Input.GetMouseButtonUp(0) || ((PlayerRigidBody.position - PlayerSpringJoint.connectedAnchor).magnitude <= 2f && ConnectedToRigidBody == true) )
             {
                 ConnectedToRigidBody = false;
                 Destroy(PlayerSpringJoint);
             }
 
-            //Draw line with linerenderer
-            linepos[0] = PlayerRigidBody.transform.position + new Vector3(0f, -1f, 0f) + (CameraFocusTransform.rotation * new Vector3(-0.5f, 0f, 0.5f));
-            if (ConnectedToRigidBody)
+            if (TryGetComponent<SpringJoint>(out SpringJoint _))
             {
-                linepos[1] = PlayerSpringJoint.connectedBody.gameObject.transform.TransformPoint(PlayerSpringJoint.connectedAnchor);
+                //Draw line with linerenderer
+                linepos[0] = PlayerRigidBody.transform.position + new Vector3(0f, -0.2f, 0f) + (CameraFocusTransform.rotation * new Vector3(-0.5f, 0f, 0.5f));
+                if (ConnectedToRigidBody)
+                {
+                    linepos[1] = PlayerSpringJoint.connectedBody.gameObject.transform.TransformPoint(PlayerSpringJoint.connectedAnchor);
+                }
+                else
+                {
+                    linepos[1] = PlayerSpringJoint.connectedAnchor;
+                }
+                LineRender.SetPositions(linepos);
+
+                if (Input.GetKeyDown(KeyCode.Space))
+                {
+                    PlayerRigidBody.AddForce((CameraFocusTransform.rotation * Vector3.forward) * 45f, ForceMode.VelocityChange);
+                }
             }
             else
             {
-                linepos[1] = PlayerSpringJoint.connectedAnchor;
-            }
-            LineRender.SetPositions(linepos);
-
-            if (Input.GetKeyDown(KeyCode.E))
-            {
-                PlayerRigidBody.AddForce((CameraFocusTransform.rotation * Vector3.forward) * 20f, ForceMode.VelocityChange);
+                linepos[0] = Vector3.zero;
+                linepos[1] = Vector3.zero;
+                LineRender.SetPositions(linepos);
             }
         }
 
@@ -203,25 +213,24 @@ namespace PlayerControl
             float dist = Mathf.Abs(_RayHit.point.y - PlayerRigidBody.position.y);
             _SpringJoint.minDistance = 0f;
             _SpringJoint.maxDistance = dist - 1.5f;
-
-            Debug.Log("asdsad");
         }
 
         public void CreateRigidBodySpringJoint(out SpringJoint _SpringJoint, RaycastHit _RayHit)
         {
             _SpringJoint = gameObject.AddComponent<SpringJoint>();
             _SpringJoint.autoConfigureConnectedAnchor = false;
-            _SpringJoint.spring = 500;
-            _SpringJoint.damper = 500;
+            _SpringJoint.spring = 5f;
+            _SpringJoint.damper = 10f;
             _SpringJoint.enableCollision = true;
             //anchor on player (local to player rigidbody)
             _SpringJoint.anchor = new Vector3(0f, 1f, 0f);
             //anchor on rayhit (local to connected rigidbody)
             _SpringJoint.connectedBody = _RayHit.rigidbody;
             _SpringJoint.connectedAnchor = _RayHit.rigidbody.gameObject.transform.InverseTransformPoint(_RayHit.point);
-            _SpringJoint.tolerance = 0f;
+            _SpringJoint.tolerance = 0.01f;
             _SpringJoint.minDistance = 0f;
             _SpringJoint.maxDistance = _RayHit.distance;
+            _SpringJoint.breakForce = Mathf.Infinity;
         }
 
         /// <summary>
