@@ -35,8 +35,8 @@ Material:
     m_TexEnvs: []
     m_Floats:
     - Vector1_5F3D85C2: 5
-    - Vector1_7D7A9716: -3.5
-    - Vector1_AD89B459: 1.5
+    - Vector1_7D7A9716: 0
+    - Vector1_AD89B459: 1
     - Vector1_D0FF2089: 10
     - Vector1_F803A7EF: 2.25
     m_Colors:

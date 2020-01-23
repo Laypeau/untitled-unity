@@ -5,27 +5,39 @@ using UnityEngine;
 
 public class CameraController : MonoBehaviour
 {
+    private float HeadOffset = 0.75f;
+
+    //get rid of these
     private float CameraOffsetX = 0f;
     private float CameraOffsetY = 0f;
-    private float CameraOffsetZ = 0f; //make sure its negative
+    private float CameraOffsetZ = 0f;
 
     private float CameraFocusPosLerpXZ = 1f;
-    private float CameraFocusPosLerpY = 0.5f;
+    private float CameraFocusPosLerpY = 0.75f;
 
     [Range(-10f, 10f)] public float SensitivityX = 5f;
     [Range(-10f, 10f)] public float SensitivityY = -5f;
 
+    //Camera Bounds
+    /// <summary>
+    /// It's inverted from what you'd think for some reason. ¯\_(ツ)_/¯
+    /// </summary>
+    public float XRotation = 0f;
+    public float YRotation = 0f;
+
     //DoCameraShake()
+    /// <summary>
+    /// Clamps itself between 0 and 10
+    /// </summary>
     [Range(0f, 10f)] public float Trauma = 0f;  //keep within 0 and 10
     [HideInInspector] public float TraumaDelta = 0f;
     private readonly float TraumaDecrement = 0.15f;
     private float ShakeSpeed = 10f;
 
     //Component references
-    [SerializeField] private GameObject PlayerGameObject;
-    [SerializeField] private Transform CameraFocusTransform;
-    [SerializeField] private Transform CameraTransform;
-    [SerializeField] private Camera CameraCamera;
+    private GameObject PlayerGameObject;
+    private Transform CameraFocusTransform;
+    private Transform CameraTransform;
 
     private MenuManagementPause MenuManagementPause;
 
@@ -53,7 +65,6 @@ public class CameraController : MonoBehaviour
 
         //AngleZoom();
         //CameraBackToCollider(CameraTransform);
-
     }
 
     void LateUpdate()
@@ -69,7 +80,6 @@ public class CameraController : MonoBehaviour
         PlayerGameObject = GameObject.Find("Player");
         CameraFocusTransform = GetComponent<Transform>();
         CameraTransform = CameraFocusTransform.Find("PlayerCamera");
-        CameraCamera = GameObject.Find("PlayerCamera").GetComponent<Camera>();
 
         MenuManagementPause = GameObject.Find("Canvas").GetComponent<MenuManagementPause>();
     }
@@ -96,15 +106,11 @@ public class CameraController : MonoBehaviour
     /// <summary>
     /// Lerps the camera focus to the input transform by independent Y and XZ values
     /// </summary>
-    public void MoveToFocus(Transform _InputTransform)
+    public void MoveToFocus(Transform _HeadPosition)
     {
-        float _CurX = CameraFocusTransform.position.x;
-        float _CurY = CameraFocusTransform.position.y;
-        float _CurZ = CameraFocusTransform.position.z;
-
-        float _OutX = Mathf.Lerp(_CurX, _InputTransform.position.x, CameraFocusPosLerpXZ);
-        float _OutY = Mathf.Lerp(_CurY, _InputTransform.position.y, CameraFocusPosLerpY);
-        float _OutZ = Mathf.Lerp(_CurZ, _InputTransform.position.z, CameraFocusPosLerpXZ);
+        float _OutX = Mathf.Lerp(CameraFocusTransform.position.x, _HeadPosition.position.x, CameraFocusPosLerpXZ);
+        float _OutY = Mathf.Lerp(CameraFocusTransform.position.y, _HeadPosition.position.y + (HeadOffset * PlayerControl.CharacterControl.CrouchScaleMultiplier), CameraFocusPosLerpY);
+        float _OutZ = Mathf.Lerp(CameraFocusTransform.position.z, _HeadPosition.position.z, CameraFocusPosLerpXZ);
 
         CameraFocusTransform.position = new Vector3(_OutX, _OutY, _OutZ);
     }
@@ -114,12 +120,16 @@ public class CameraController : MonoBehaviour
     /// </summary>
     public void RotateByMouse(Transform _FocusTransform)
     {
-        Quaternion TargetPitch = Quaternion.Euler(Input.GetAxis("Mouse Y") * SensitivityY, 0f,0f);
-        Quaternion TargetYaw = Quaternion.Euler(0f, Input.GetAxis("Mouse X") * SensitivityX, 0f);
+        XRotation += Input.GetAxis("Mouse Y") * SensitivityY;  //Up is negative, Down is positive. ¯\_(ツ)_/¯
+        XRotation = Mathf.Clamp(XRotation, -90f, 90f);
+
+        YRotation += Input.GetAxis("Mouse X") * SensitivityX;
+
+        _FocusTransform.rotation = Quaternion.Euler(XRotation, YRotation, 0f);
 
         //On the left means global, on the right means local
-        _FocusTransform.rotation = TargetYaw * _FocusTransform.rotation;    //Happens under global co-ords
-        _FocusTransform.rotation = _FocusTransform.rotation * TargetPitch;  //Happens under local co-ords
+        //_FocusTransform.rotation = TargetYaw * _FocusTransform.rotation;    //Happens under global co-ords
+        //_FocusTransform.rotation = _FocusTransform.rotation * TargetPitch;  //Happens under local co-ords
     }
 
     public void AngleBasedZoom()
@@ -149,10 +159,13 @@ public class CameraController : MonoBehaviour
             
     }
 
+    /// <summary>
+    /// Adds TraumaDelta to Trauma. 
+    /// Shakes the camera exponentially proportional to Trauma, within the bounds of +-ShakeMaxZ. 
+    /// Then it decrements Trauma by TraumaDecrement * Timescale.
+    /// </summary>
     public void DoCameraShake()
-    //Adds TraumaDelta to Trauma
-    //Shakes the camera exponentially proportional to Trauma, within the bounds of +-ShakeMaxZ
-    //Then it decrements Trauma by TraumaDecrement * Timescale
+
     {
         Trauma = Mathf.Clamp(Trauma + TraumaDelta, 0f, 10f);
         TraumaDelta = 0;
