@@ -13,13 +13,8 @@ namespace PlayerControl
         private float MaxGrappleDistance = 30f;
         public float Spring = 10f; //temp
         public float Damper = 5f;  //temp
-        private bool ConnectedToRigidBody = false;
         LineRenderer LineRender;
         private Vector3[] linepos = new Vector3[2];
-
-        //Crouch
-        public static float CrouchScaleDefault = 2f;
-        public static float CrouchScaleMultiplier = 0.5f;
 
         //ObjectReferences (Set in Start)
         private static CameraController CameraControlScript;
@@ -50,6 +45,10 @@ namespace PlayerControl
 
             LineRender = GetComponent<LineRenderer>();
             LineRender.useWorldSpace = true;
+
+            MoveVector.PlayerRigidBody = PlayerRigidBody;
+            MoveVector.CameraFocusTransform = CameraFocusTransform;
+            MoveVector.PlayerCapsuleCollider = PlayerCapsuleCollider;
         }
 
         void Update()
@@ -93,7 +92,6 @@ namespace PlayerControl
             // Destroy SpringJoint
             if (Input.GetMouseButtonUp(0))
             {
-                ConnectedToRigidBody = false;
                 Destroy(PlayerSpringJoint);
             }
 
@@ -119,20 +117,20 @@ namespace PlayerControl
                 linepos[1] = Vector3.zero;
                 LineRender.SetPositions(linepos);
             }
+
+            if (Input.GetKeyDown(KeyCode.LeftShift))
+            {
+                MoveVector.StartSlide();
+            }
+            if (Input.GetKeyUp(KeyCode.LeftShift))
+            {
+                MoveVector.EndSlide();
+            }
         }
 
         void FixedUpdate()
         {
             MoveVector.CalculateRaw();
-
-            if (Input.GetKey(KeyCode.LeftShift))
-            {
-                MoveVector.StartSlide();
-            }
-            else
-            {
-                MoveVector.EndSlide();
-            }
 
             if (CheckGrounded())
             {
@@ -148,147 +146,16 @@ namespace PlayerControl
             }
             else
             {
+                MoveVector.ApplyAirMovement();
+
                 //Only apply aerial friction forces when there is no springjoint, as to not mess with the forces involved
-                if (Input.GetKey(KeyCode.LeftShift) && !TryGetComponent(out SpringJoint _))
+                if (!TryGetComponent(out SpringJoint _))
                 {
-                    MoveVector.ApplySlideFriction();
-                }
-                else
-                {
-                    MoveVector.ApplyAirMovement();
-
-                    if (!TryGetComponent(out SpringJoint _))
-                    {
-                        MoveVector.ApplyAirFriction();
-                    }
-                }
+                    MoveVector.ApplyAirFriction();
+                } 
             }
         }
 
-        public static class MoveVector
-        {
-            public static Vector3 UnrotatedRaw;
-            public static Vector3 RotatedRaw;
-            public static Vector3 VelocityXZ;
-            public static float MaxMoveMagnitude = 12f;
-
-            public static float JumpForce = 10f;
-            public static float RatioOfVerticalToNormal = 0.25f;
-
-            public static float GroundFriction = 1.7f;
-            public static float GroundMoveMultiplier = 2.0f;
-
-            public static float AirFriction = 0.3f;
-            public static float AirMoveMultiplier = 0.5f;
-
-            public static float SlideFriction = 0.25f;
-            public static float SlideBoost = 5f;
-
-            /// <summary>
-            /// Calculates normalised input based on raw input axis, both rotated and unrotated. 
-            /// Stores the velocity of movement ONLY on the XZ plane.
-            /// </summary>
-            public static void CalculateRaw()
-            {
-                float _horizontal = Input.GetAxisRaw("Horizontal");
-                float _vertical = Input.GetAxisRaw("Vertical");
-                Vector3 _input = new Vector3(_horizontal, 0f, _vertical).normalized;
-                UnrotatedRaw = _input;
-                RotatedRaw = Quaternion.Euler(0f, CameraFocusTransform.rotation.eulerAngles.y, 0f) * UnrotatedRaw;
-
-                //Store the velocity along the XZ plane
-                VelocityXZ = new Vector3(PlayerRigidBody.velocity.x, 0f, PlayerRigidBody.velocity.z);
-            }
-
-            /// <summary>
-            /// Applies all input based AddForce calls for when on the ground
-            /// </summary>
-            public static void ApplyGroundMovement()
-            {
-                Vector3 RotatedMultipliedVector = RotatedRaw * GroundMoveMultiplier;
-
-                //Add rotated input and make sure it doesn't exceed MaxMoveMagnityde
-                if ((VelocityXZ + RotatedMultipliedVector).magnitude > MaxMoveMagnitude)
-                {
-                    //VelocityChange so that VelocityMagnitude is equal to MaxMoveMagnitude
-                    PlayerRigidBody.AddForce(Vector3.ClampMagnitude(VelocityXZ + RotatedMultipliedVector, MaxMoveMagnitude) - VelocityXZ, ForceMode.VelocityChange);
-                }
-                else
-                {
-                    PlayerRigidBody.AddForce(RotatedMultipliedVector, ForceMode.VelocityChange);
-                }
-            }
-
-            /// <summary>
-            /// Applies all input based AddForce calls for when in the air
-            /// </summary>
-            public static void ApplyAirMovement()
-            {
-                Vector3 RotatedMultipliedVector = RotatedRaw * AirMoveMultiplier;
-
-                if ((VelocityXZ + RotatedMultipliedVector).magnitude > MaxMoveMagnitude)
-                {
-                    PlayerRigidBody.AddForce(Vector3.ClampMagnitude(VelocityXZ + RotatedMultipliedVector, MaxMoveMagnitude) - VelocityXZ, ForceMode.VelocityChange);
-                }
-                else
-                {
-                    PlayerRigidBody.AddForce(RotatedMultipliedVector, ForceMode.VelocityChange);
-                }
-            }
-
-            /// <summary>
-            /// Decrements velocity on the XZ plane by GroundFriction
-            /// </summary>
-            public static void ApplyGroundFriction()
-            {
-                PlayerRigidBody.AddForce(-Vector3.ClampMagnitude(VelocityXZ, GroundFriction), ForceMode.VelocityChange);
-            }
-
-            /// <summary>
-            /// Decrements velocity on the XZ plane by 0.05*VelocityXZ
-            /// </summary>
-            public static void ApplyAirFriction()
-            {
-                //PlayerRigidBody.AddForce(-Vector3.ClampMagnitude(VelocityXZ, AirFriction), ForceMode.VelocityChange);
-                PlayerRigidBody.AddForce(VelocityXZ * -0.05f , ForceMode.VelocityChange);
-            }
-            
-            public static void StartSlide()
-            {
-                PlayerCapsuleCollider.height = CrouchScaleDefault * CrouchScaleMultiplier;
-                PlayerCapsuleMesh = PlayerCrouchMesh;
-
-                // Boost on slide
-                if (VelocityXZ.magnitude > 0.5f) //Slide boost threshold is arbitrarily assigned
-                {
-                    PlayerRigidBody.AddForce(VelocityXZ.normalized * SlideBoost);
-                }
-            }
-
-            public static void EndSlide()
-            {
-                PlayerCapsuleCollider.height = CrouchScaleDefault;
-            }
-
-            /// <summary>
-            /// Decrements velocity on the XZ plane by SlideFriction
-            /// </summary>
-            public static void ApplySlideFriction()
-            {
-                PlayerRigidBody.AddForce(-Vector3.ClampMagnitude(VelocityXZ, SlideFriction), ForceMode.VelocityChange);
-            }
-
-            /// <summary>
-            /// Applies jump force vertically and along the floor normal
-            /// </summary>
-            public static void ApplyJumpForce()
-            {
-                Ray ray = new Ray(PlayerTransform.position, new Vector3(0f, -1f, 0f));
-                Physics.Raycast(ray, out RaycastHit hit, 10f);
-                PlayerRigidBody.AddForce(Vector3.up * JumpForce * RatioOfVerticalToNormal, ForceMode.VelocityChange);
-                PlayerRigidBody.AddForce(hit.normal.normalized * JumpForce * (1f - RatioOfVerticalToNormal), ForceMode.VelocityChange);
-            }
-        }
 
         /// <summary>
         /// Creates a spring joint for grappling
@@ -319,7 +186,7 @@ namespace PlayerControl
                 _SpringJoint.enableCollision = true;
             }
 
-            if (CameraControlScript.XRotation < 5f)
+            if (CameraControlScript.XRotation > 5f)
             {
                 _SpringJoint.maxDistance = _RayHit.distance;
             }
@@ -387,6 +254,137 @@ namespace PlayerControl
             }
 
             return CumulativeFloorPosition / NumOfRayhits;
+        }
+    }
+
+    public static class MoveVector
+    {
+        public static Rigidbody PlayerRigidBody;
+        public static Transform CameraFocusTransform;
+        public static CapsuleCollider PlayerCapsuleCollider;
+
+        public static Vector3 UnrotatedRaw;
+        public static Vector3 RotatedRaw;
+        public static Vector3 VelocityXZ;
+        public static float MaxMoveMagnitude = 12f;
+
+        public static float JumpForce = 10f;
+        public static float RatioOfVerticalToNormal = 0.25f;
+
+        public static float GroundFriction = 1.7f;
+        public static float GroundMoveMultiplier = 2.0f;
+
+        public static float AirFriction = 0.3f;
+        public static float AirMoveMultiplier = 0.5f;
+
+        public static float SlideFriction = 0.1f;
+        public static float SlideBoost = 8f;
+        public static float CrouchScaleDefault = 2f;
+        public static float CrouchScaleMultiplier = 0.5f;
+
+        /// <summary>
+        /// Calculates normalised input based on raw input axis, both rotated and unrotated. 
+        /// Stores the velocity of movement ONLY on the XZ plane.
+        /// </summary>
+        public static void CalculateRaw()
+        {
+            float _horizontal = Input.GetAxisRaw("Horizontal");
+            float _vertical = Input.GetAxisRaw("Vertical");
+            Vector3 _input = new Vector3(_horizontal, 0f, _vertical).normalized;
+            UnrotatedRaw = _input;
+            RotatedRaw = Quaternion.Euler(0f, CameraFocusTransform.rotation.eulerAngles.y, 0f) * UnrotatedRaw;
+
+            //Store the velocity along the XZ plane
+            VelocityXZ = new Vector3(PlayerRigidBody.velocity.x, 0f, PlayerRigidBody.velocity.z);
+        }
+
+        /// <summary>
+        /// Applies all input based AddForce calls for when on the ground
+        /// </summary>
+        public static void ApplyGroundMovement()
+        {
+            Vector3 RotatedMultipliedVector = RotatedRaw * GroundMoveMultiplier;
+
+            //Add rotated input and make sure it doesn't exceed MaxMoveMagnityde
+            if ((VelocityXZ + RotatedMultipliedVector).magnitude > MaxMoveMagnitude)
+            {
+                //VelocityChange so that VelocityMagnitude is equal to MaxMoveMagnitude
+                PlayerRigidBody.AddForce(Vector3.ClampMagnitude(VelocityXZ + RotatedMultipliedVector, MaxMoveMagnitude) - VelocityXZ, ForceMode.VelocityChange);
+            }
+            else
+            {
+                PlayerRigidBody.AddForce(RotatedMultipliedVector, ForceMode.VelocityChange);
+            }
+        }
+
+        /// <summary>
+        /// Applies all input based AddForce calls for when in the air
+        /// </summary>
+        public static void ApplyAirMovement()
+        {
+            Vector3 RotatedMultipliedVector = RotatedRaw * AirMoveMultiplier;
+
+            if ((VelocityXZ + RotatedMultipliedVector).magnitude > MaxMoveMagnitude)
+            {
+                PlayerRigidBody.AddForce(Vector3.ClampMagnitude(VelocityXZ + RotatedMultipliedVector, MaxMoveMagnitude) - VelocityXZ, ForceMode.VelocityChange);
+            }
+            else
+            {
+                PlayerRigidBody.AddForce(RotatedMultipliedVector, ForceMode.VelocityChange);
+            }
+        }
+
+        /// <summary>
+        /// Decrements velocity on the XZ plane by GroundFriction
+        /// </summary>
+        public static void ApplyGroundFriction()
+        {
+            PlayerRigidBody.AddForce(-Vector3.ClampMagnitude(VelocityXZ, GroundFriction), ForceMode.VelocityChange);
+        }
+
+        /// <summary>
+        /// Decrements velocity on the XZ plane by 0.05*VelocityXZ
+        /// </summary>
+        public static void ApplyAirFriction()
+        {
+            //PlayerRigidBody.AddForce(-Vector3.ClampMagnitude(VelocityXZ, AirFriction), ForceMode.VelocityChange);
+            PlayerRigidBody.AddForce(VelocityXZ * -0.05f, ForceMode.VelocityChange);
+        }
+
+        public static void StartSlide()
+        {
+            PlayerCapsuleCollider.height = CrouchScaleDefault * CrouchScaleMultiplier;
+
+            // Boost on slide start
+            if (VelocityXZ.magnitude > 0.5f /* && CheckGrounded()*/) //Slide boost threshold is arbitrarily assigned
+            {
+                PlayerRigidBody.AddForce(VelocityXZ.normalized * SlideBoost, ForceMode.VelocityChange);
+            }
+        }
+
+        public static void EndSlide()
+        {
+            PlayerCapsuleCollider.height = CrouchScaleDefault;
+        }
+
+        /// <summary>
+        /// Decrements velocity on the XZ plane by SlideFriction
+        /// </summary>
+        public static void ApplySlideFriction()
+        {
+            PlayerRigidBody.AddForce(-Vector3.ClampMagnitude(VelocityXZ, SlideFriction), ForceMode.VelocityChange);
+            PlayerRigidBody.AddForce(Vector3.down * 5f, ForceMode.Force);
+        }
+
+        /// <summary>
+        /// Applies jump force vertically and along the floor normal
+        /// </summary>
+        public static void ApplyJumpForce()
+        {
+            Ray ray = new Ray(PlayerRigidBody.position, new Vector3(0f, -1f, 0f));
+            Physics.Raycast(ray, out RaycastHit hit, 10f);
+            PlayerRigidBody.AddForce(Vector3.up * JumpForce * RatioOfVerticalToNormal, ForceMode.VelocityChange);
+            PlayerRigidBody.AddForce(hit.normal.normalized * JumpForce * (1f - RatioOfVerticalToNormal), ForceMode.VelocityChange);
         }
     }
 
