@@ -109,7 +109,7 @@ public class CameraController : MonoBehaviour
     public void MoveToFocus(Transform _HeadPosition)
     {
         float _OutX = Mathf.Lerp(CameraFocusTransform.position.x, _HeadPosition.position.x, CameraFocusPosLerpXZ);
-        float _OutY = Mathf.Lerp(CameraFocusTransform.position.y, _HeadPosition.position.y + (HeadOffset * PlayerControl.CharacterControl.CrouchScaleMultiplier), CameraFocusPosLerpY);
+        float _OutY = Mathf.Lerp(CameraFocusTransform.position.y, _HeadPosition.position.y + (HeadOffset * PlayerControl.MoveVector.CrouchScaleMultiplier), CameraFocusPosLerpY);
         float _OutZ = Mathf.Lerp(CameraFocusTransform.position.z, _HeadPosition.position.z, CameraFocusPosLerpXZ);
 
         CameraFocusTransform.position = new Vector3(_OutX, _OutY, _OutZ);
