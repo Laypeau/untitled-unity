@@ -126,14 +126,12 @@ public class CameraController : MonoBehaviour
         YRotation += Input.GetAxis("Mouse X") * SensitivityX;
 
         _FocusTransform.rotation = Quaternion.Euler(XRotation, YRotation, 0f);
-
-        //On the left means global, on the right means local
-        //_FocusTransform.rotation = TargetYaw * _FocusTransform.rotation;    //Happens under global co-ords
-        //_FocusTransform.rotation = _FocusTransform.rotation * TargetPitch;  //Happens under local co-ords
     }
 
+    /// <summary>
+    /// Zooms the camera in or out depending on the angle from CameraFocusTransform to it
+    /// </summary>
     public void AngleBasedZoom()
-    //Zooms the camera in or out depending on the angle from CameraFocusTransform to it
     {
         float angle = CameraFocusTransform.localRotation.eulerAngles.x;
 

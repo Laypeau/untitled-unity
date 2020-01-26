@@ -25,6 +25,7 @@ namespace PlayerControl
         public static CapsuleCollider PlayerCapsuleCollider;
         public static Mesh PlayerCapsuleMesh;
         public static Mesh PlayerCrouchMesh;
+        public static Material LineMat;
 
         //DEBUG
         //Remember to set in the inspector
@@ -45,10 +46,9 @@ namespace PlayerControl
 
             LineRender = GetComponent<LineRenderer>();
             LineRender.useWorldSpace = true;
+            LineMat = LineRender.material;
 
-            MoveVector.PlayerRigidBody = PlayerRigidBody;
-            MoveVector.CameraFocusTransform = CameraFocusTransform;
-            MoveVector.PlayerCapsuleCollider = PlayerCapsuleCollider;
+            MoveVector.Initialise(PlayerRigidBody, CameraFocusTransform, PlayerCapsuleCollider);
         }
 
         void Update()
@@ -59,7 +59,7 @@ namespace PlayerControl
                 DebugMenu.SetActive(true);
                 if (TryGetComponent(out SpringJoint _))
                 {
-                    DebugTextMoveVector.text = "Desired Distance: " + PlayerSpringJoint.maxDistance + "\n" + "Actual Distance: " + Vector3.Distance(linepos[0], linepos[1]);
+                    DebugTextMoveVector.text = "Desired Distance: " + PlayerSpringJoint.maxDistance + "\n" + "Actual Distance: " + Vector3.Distance(PlayerRigidBody.position, linepos[1]);
                 }
                 else
                 {
@@ -83,14 +83,14 @@ namespace PlayerControl
             }
 
             // Create SpringJoint
-            Ray PlayerDirection = new Ray(transform.position, CameraFocusTransform.rotation * Vector3.forward);
-            if (Input.GetMouseButtonDown(0) && Physics.SphereCast(PlayerDirection, 0.3f, out RaycastHit RayHit, MaxGrappleDistance))
+            Ray PlayerDirection = new Ray(CameraFocusTransform.position, CameraFocusTransform.rotation * Vector3.forward);
+            if (Input.GetMouseButtonDown(1) && Physics.SphereCast(PlayerDirection, 0.3f, out RaycastHit RayHit, MaxGrappleDistance))
             {
                 CreateSpringJoint(out PlayerSpringJoint, RayHit);
             }
 
             // Destroy SpringJoint
-            if (Input.GetMouseButtonUp(0))
+            if (Input.GetMouseButtonUp(1))
             {
                 Destroy(PlayerSpringJoint);
             }
@@ -110,6 +110,7 @@ namespace PlayerControl
                 }
 
                 LineRender.SetPositions(linepos);
+                LineMat.SetFloat("_Stretch", Mathf.Abs(Vector3.Distance(PlayerRigidBody.position, linepos[1]) - PlayerSpringJoint.maxDistance));
             }
             else
             {
@@ -186,7 +187,7 @@ namespace PlayerControl
                 _SpringJoint.enableCollision = true;
             }
 
-            if (CameraControlScript.XRotation > 5f)
+            if (CameraControlScript.XRotation > 0f && !(_RayHit.rigidbody == null))
             {
                 _SpringJoint.maxDistance = _RayHit.distance;
             }
@@ -271,16 +272,26 @@ namespace PlayerControl
         public static float JumpForce = 10f;
         public static float RatioOfVerticalToNormal = 0.25f;
 
-        public static float GroundFriction = 1.7f;
+        public static float GroundFriction = 1f;
         public static float GroundMoveMultiplier = 2.0f;
 
         public static float AirFriction = 0.3f;
         public static float AirMoveMultiplier = 0.5f;
 
         public static float SlideFriction = 0.1f;
-        public static float SlideBoost = 8f;
+        public static float SlideBoost = 3f;
         public static float CrouchScaleDefault = 2f;
         public static float CrouchScaleMultiplier = 0.5f;
+
+        /// <summary>
+        /// Links the component references to the ones attached to the gameobject
+        /// </summary>
+        public static void Initialise(Rigidbody _PlayerRigidBody, Transform _CameraFocusTransform, CapsuleCollider _PlayerCapsuleCollider)
+        {
+            PlayerRigidBody = _PlayerRigidBody;
+            CameraFocusTransform = _CameraFocusTransform;
+            PlayerCapsuleCollider = _PlayerCapsuleCollider;
+        }
 
         /// <summary>
         /// Calculates normalised input based on raw input axis, both rotated and unrotated. 
