@@ -7,11 +7,6 @@ public class CameraController : MonoBehaviour
 {
     private float HeadOffset = 0.75f;
 
-    //get rid of these
-    private float CameraOffsetX = 0f;
-    private float CameraOffsetY = 0f;
-    private float CameraOffsetZ = 0f;
-
     private float CameraFocusPosLerpXZ = 1f;
     private float CameraFocusPosLerpY = 0.75f;
 
@@ -44,9 +39,6 @@ public class CameraController : MonoBehaviour
     void Start()
     {
         Initialise();
-
-        CameraTransform.localPosition = new Vector3(CameraOffsetX,0f,CameraOffsetZ);
-        CameraFocusTransform.localRotation = Quaternion.Euler(Vector3.zero);
     }
 
     void Update()
@@ -93,8 +85,6 @@ public class CameraController : MonoBehaviour
         {
             Cursor.lockState = CursorLockMode.None;
             Cursor.visible = true;
-
-            //Maybe use a custom cursor image?
         }
         else
         {
@@ -126,35 +116,6 @@ public class CameraController : MonoBehaviour
         YRotation += Input.GetAxis("Mouse X") * SensitivityX;
 
         _FocusTransform.rotation = Quaternion.Euler(XRotation, YRotation, 0f);
-    }
-
-    /// <summary>
-    /// Zooms the camera in or out depending on the angle from CameraFocusTransform to it
-    /// </summary>
-    public void AngleBasedZoom()
-    {
-        float angle = CameraFocusTransform.localRotation.eulerAngles.x;
-
-        if (angle > 180) angle -= 360;
-
-        CameraTransform.localPosition = new Vector3(CameraOffsetX, CameraOffsetY, CameraOffsetZ + (CameraOffsetZ * (angle/90)));
-    }
-
-    public void CameraBackToCollider(Transform _CameraTransform)
-    {
-        Physics.Raycast(CameraFocusTransform.position, CameraFocusTransform.rotation * new Vector3(0f, 0f, CameraOffsetZ), out RaycastHit RayHit);
-        //Debug.DrawRay(CameraFocusTransform.position, CameraFocusTransform.rotation * new Vector3(0f, 0f, CameraOffsetZ), Color.red);
-
-        //If colliding with "Terrain" tag, move _CameraTransform to the distance of the collision
-        if (RayHit.collider.CompareTag("Terrain") && RayHit.distance < Mathf.Abs(CameraOffsetZ))
-        {
-            _CameraTransform.localPosition = new Vector3(CameraOffsetX, CameraOffsetY, -RayHit.distance + 0.1f); //change the float
-        }
-        else
-        {
-            _CameraTransform.localPosition = new Vector3(CameraOffsetX, CameraOffsetY, CameraOffsetZ);
-        }
-            
     }
 
     /// <summary>

@@ -7,13 +7,13 @@ public class ObjectPool : MonoBehaviour
     public static ObjectPool Instance { get; private set; }
     public GameObject BulletPrefab;
     public int NumberOfBullets = 5;
-    public List<GameObject> bullets;
+    public List<GameObject> BulletsInExistence;
 
     void Awake()
     {
         Instance = this;
 
-        bullets = new List<GameObject>(NumberOfBullets);
+        BulletsInExistence = new List<GameObject>(NumberOfBullets);
 
         for (int i = 0; i < NumberOfBullets; i++)
         {
@@ -21,14 +21,14 @@ public class ObjectPool : MonoBehaviour
             prefabInstance.transform.SetParent(transform);
             prefabInstance.SetActive(false);
 
-            bullets.Add(prefabInstance);
+            BulletsInExistence.Add(prefabInstance);
         }
         
     }
 
     public GameObject GetBullet()
     {
-        foreach (GameObject bullet in bullets)
+        foreach (GameObject bullet in BulletsInExistence)
         {
             if (bullet.activeInHierarchy == false)
             {
@@ -39,7 +39,7 @@ public class ObjectPool : MonoBehaviour
 
         GameObject prefabInstance = Instantiate(BulletPrefab);
         prefabInstance.transform.SetParent(transform);
-        bullets.Add(prefabInstance);
+        BulletsInExistence.Add(prefabInstance);
 
         return prefabInstance;
     }

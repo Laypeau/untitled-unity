@@ -15,6 +15,7 @@ namespace PlayerControl
         public float Damper = 5f;  //temp
         LineRenderer LineRender;
         private Vector3[] linepos = new Vector3[2];
+        private LayerMask GrappleMask; //Set in start
 
         //ObjectReferences (Set in Start)
         private static CameraController CameraControlScript;
@@ -44,6 +45,7 @@ namespace PlayerControl
             PlayerCapsuleMesh = GetComponent<MeshFilter>().mesh;
             PlayerCrouchMesh = AssetDatabase.LoadAssetAtPath<Mesh>("Assets/Models/suzanne.fbx");
 
+            GrappleMask = LayerMask.GetMask("Terrain", "Default");
             LineRender = GetComponent<LineRenderer>();
             LineRender.useWorldSpace = true;
             LineMat = LineRender.material;
@@ -84,7 +86,7 @@ namespace PlayerControl
 
             // Create SpringJoint
             Ray PlayerDirection = new Ray(CameraFocusTransform.position, CameraFocusTransform.rotation * Vector3.forward);
-            if (Input.GetMouseButtonDown(1) && Physics.SphereCast(PlayerDirection, 0.3f, out RaycastHit RayHit, MaxGrappleDistance))
+            if (Input.GetMouseButtonDown(1) && Physics.SphereCast(PlayerDirection, 0.2f, out RaycastHit RayHit, MaxGrappleDistance, GrappleMask))
             {
                 CreateSpringJoint(out PlayerSpringJoint, RayHit);
             }
