@@ -272,12 +272,12 @@ namespace PlayerControl
         public static float MaxMoveMagnitude = 12f;
 
         public static float JumpForce = 10f;
-        public static float RatioOfVerticalToNormal = 0.25f;
+        public static float RatioOfVerticalToNormal = 0.75f;
 
         public static float GroundFriction = 1f;
         public static float GroundMoveMultiplier = 2.0f;
 
-        public static float AirFriction = 0.3f;
+        public static float AirFriction = 0.2f;
         public static float AirMoveMultiplier = 0.5f;
 
         public static float SlideFriction = 0.1f;
@@ -395,7 +395,7 @@ namespace PlayerControl
         public static void ApplyJumpForce()
         {
             Ray ray = new Ray(PlayerRigidBody.position, new Vector3(0f, -1f, 0f));
-            Physics.Raycast(ray, out RaycastHit hit, 10f);
+            Physics.SphereCast(ray, 0.5f, out RaycastHit hit, 1.5f);
             PlayerRigidBody.AddForce(Vector3.up * JumpForce * RatioOfVerticalToNormal, ForceMode.VelocityChange);
             PlayerRigidBody.AddForce(hit.normal.normalized * JumpForce * (1f - RatioOfVerticalToNormal), ForceMode.VelocityChange);
         }

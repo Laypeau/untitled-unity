@@ -5,6 +5,7 @@ using UnityEngine;
 public class Bullet : MonoBehaviour
 {
     Rigidbody bulletRigidbody;
+    LineRenderer lineRenderer;
 
     public float minVelocity = 3f;
     public float lifeTime = 5f;
@@ -13,6 +14,7 @@ public class Bullet : MonoBehaviour
     void Awake()
     {
         bulletRigidbody = GetComponent<Rigidbody>();
+        lineRenderer = GetComponent<LineRenderer>();
     }
 
     void OnEnable()

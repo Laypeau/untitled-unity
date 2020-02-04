@@ -3,34 +3,30 @@ using System;
 
 namespace PickupItem
 {
-    class Pistol : MonoBehaviour
+    class Pistol : MonoBehaviour, IProjectileWeapon
     {
         Transform CameraFocusTransform;
         Transform PlayerTransform;
+        GameObject ParentedPickupObject;
+
+        //temp
+        public Material defaultMaterial;
+        public Material reloadMaterial;
 
         public int clipSize = 10;
         public int clip = 10;
-        public float reloadTime = 4f;
+        public float reloadTime = 3f;
         public bool reloading = false;
-
-        float bulletSpeed = 20f;
-
         public float useTime = 0.2f;
-        public float lastUsed = 0f;
+        [HideInInspector]
+        private float lastUsed = 0f;
+
+        float bulletSpeed = 30f;
 
         void Awake()
         {
             CameraFocusTransform = GameObject.Find("CameraFocus").GetComponent<Transform>();
             PlayerTransform = GameObject.Find("Player").GetComponent<Transform>();
-
-        }
-
-        void Update()
-        {
-            if (Input.GetMouseButtonDown(0))
-            {
-                Shoot();
-            }
         }
 
         public void Shoot()
@@ -40,8 +36,8 @@ namespace PickupItem
                 if (Time.time >= lastUsed + useTime)
                 {
                     GameObject bullet = ObjectPool.Instance.GetBullet();
-                    bullet.GetComponent<Rigidbody>().position = PlayerTransform.position;
-                    bullet.GetComponent<Rigidbody>().AddForce(CameraFocusTransform.rotation * Vector3.forward * bulletSpeed, ForceMode.VelocityChange);
+                    bullet.GetComponent<Rigidbody>().position = CameraFocusTransform.rotation * (transform.position + new Vector3(0f, 0f, 0.4f));
+                    bullet.GetComponent<Rigidbody>().velocity = CameraFocusTransform.rotation * Vector3.forward * bulletSpeed;
                     clip -= 1;
                 }
             }
@@ -50,13 +46,14 @@ namespace PickupItem
                 if (!reloading)
                 {
                     Debug.Log("reloading");
+                    //ParentedPickupObject.GetComponent<MeshRenderer>().material = 
                     reloading = true;
                     Invoke("Reload", reloadTime);
                 }
             }
         }
 
-        private void Reload()
+        public void Reload()
         {
             clip = clipSize;
             reloading = false;

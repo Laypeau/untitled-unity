@@ -22,9 +22,9 @@ public class CameraController : MonoBehaviour
 
     //DoCameraShake()
     /// <summary>
-    /// Clamps itself between 0 and 10
+    /// Automatically clamps itself between 0 and 10
     /// </summary>
-    [Range(0f, 10f)] public float Trauma = 0f;  //keep within 0 and 10
+    [Range(0f, 10f)] public float Trauma = 0f;
     [HideInInspector] public float TraumaDelta = 0f;
     private readonly float TraumaDecrement = 0.15f;
     private float ShakeSpeed = 10f;
