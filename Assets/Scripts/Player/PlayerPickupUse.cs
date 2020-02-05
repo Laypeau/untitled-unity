@@ -27,7 +27,7 @@ namespace PlayerControl
             {
                 if (PickedUpItem != null)
                 {
-                    PickedUpItem.GetComponent<PickupItem.Pistol>().Shoot();
+                    PickedUpItem.GetComponent<PickupItem.PickupItem>().Use();
                 }
             }
 

@@ -73,7 +73,7 @@ namespace PlayerControl
                 //DebugMenu.SetActive(false);
             }
 
-            if (Input.GetKey(KeyCode.R))
+            if (Input.GetKey(KeyCode.Alpha2))
             {
                 SceneManager.LoadScene(SceneManager.GetActiveScene().buildIndex);
             }

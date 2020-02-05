@@ -1,16 +1,15 @@
 ﻿using UnityEngine;
 using System;
+using PickupItem;
 
 namespace PickupItem
 {
-    class Pistol : MonoBehaviour, IProjectileWeapon
+    class Pistol : UseItem
     {
-        Transform CameraFocusTransform;
-        Transform PlayerTransform;
-        GameObject ParentedPickupObject;
+        GameObject PickupGameObject;
 
         //temp
-        public Material defaultMaterial;
+        private Material defaultMaterial;
         public Material reloadMaterial;
 
         public int clipSize = 10;
@@ -23,15 +22,14 @@ namespace PickupItem
 
         float bulletSpeed = 30f;
 
-        void Awake()
+        void Start()
         {
-            CameraFocusTransform = GameObject.Find("CameraFocus").GetComponent<Transform>();
-            PlayerTransform = GameObject.Find("Player").GetComponent<Transform>();
+            defaultMaterial = gameObject.GetComponent<MeshRenderer>().material;
         }
 
-        public void Shoot()
+        public override void Use()
         {
-            if (clip > 0 )
+            if (clip > 0 && !reloading)
             {
                 if (Time.time >= lastUsed + useTime)
                 {
@@ -41,12 +39,12 @@ namespace PickupItem
                     clip -= 1;
                 }
             }
-            else
+            
+            if (clip <= 0 || Input.GetKeyDown(KeyCode.R))
             {
                 if (!reloading)
                 {
-                    Debug.Log("reloading");
-                    //ParentedPickupObject.GetComponent<MeshRenderer>().material = 
+                    gameObject.GetComponent<MeshRenderer>().material = reloadMaterial;
                     reloading = true;
                     Invoke("Reload", reloadTime);
                 }
@@ -55,9 +53,10 @@ namespace PickupItem
 
         public void Reload()
         {
-            clip = clipSize;
+            gameObject.GetComponent<MeshRenderer>().material = defaultMaterial;
             reloading = false;
-            Debug.Log("Reloaded!");
+            clip = clipSize;
+
         }
     }
 
