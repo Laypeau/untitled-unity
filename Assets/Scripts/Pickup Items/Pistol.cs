@@ -6,25 +6,39 @@ namespace PickupItem
 {
     class Pistol : UseItem
     {
-        GameObject PickupGameObject;
-
         //temp
         private Material defaultMaterial;
         public Material reloadMaterial;
 
         public int clipSize = 10;
         public int clip = 10;
-        public float reloadTime = 3f;
-        public bool reloading = false;
+        public float reloadTime = 2.8f;
+        [HideInInspector] public bool reloading = false;
         public float useTime = 0.2f;
-        [HideInInspector]
-        private float lastUsed = 0f;
+        [HideInInspector] private float lastUsed = 0f;
 
-        float bulletSpeed = 30f;
+        /// <summary>
+        /// Initial velocity of the bullet's rigidbody
+        /// </summary>
+        public float bulletSpeed = 30f;
+        /// <summary>
+        /// The offset from the game object's transform, in local space
+        /// </summary>
+        public Vector3 bulletSpawnOffset = new Vector3(0f, 0f, 0.4f);
 
         void Start()
         {
             defaultMaterial = gameObject.GetComponent<MeshRenderer>().material;
+        }
+
+        void Update()
+        {
+            if ((clip <= 0 || Input.GetKeyDown(KeyCode.R)) && GetComponent<PickupItem>().PickedUp && !reloading)
+            {
+                gameObject.GetComponent<MeshRenderer>().material = reloadMaterial;
+                reloading = true;
+                Invoke("Reload", reloadTime);
+            }
         }
 
         public override void Use()
@@ -33,20 +47,11 @@ namespace PickupItem
             {
                 if (Time.time >= lastUsed + useTime)
                 {
+                    lastUsed = Time.time;
                     GameObject bullet = ObjectPool.Instance.GetBullet();
-                    bullet.GetComponent<Rigidbody>().position = CameraFocusTransform.rotation * (transform.position + new Vector3(0f, 0f, 0.4f));
-                    bullet.GetComponent<Rigidbody>().velocity = CameraFocusTransform.rotation * Vector3.forward * bulletSpeed;
+                    bullet.GetComponent<Rigidbody>().position = transform.position + (transform.rotation * bulletSpawnOffset);
+                    bullet.GetComponent<Rigidbody>().velocity = transform.rotation * Vector3.forward * bulletSpeed;
                     clip -= 1;
-                }
-            }
-            
-            if (clip <= 0 || Input.GetKeyDown(KeyCode.R))
-            {
-                if (!reloading)
-                {
-                    gameObject.GetComponent<MeshRenderer>().material = reloadMaterial;
-                    reloading = true;
-                    Invoke("Reload", reloadTime);
                 }
             }
         }
@@ -56,7 +61,6 @@ namespace PickupItem
             gameObject.GetComponent<MeshRenderer>().material = defaultMaterial;
             reloading = false;
             clip = clipSize;
-
         }
     }
 

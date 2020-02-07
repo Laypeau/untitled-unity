@@ -10,9 +10,11 @@ namespace PickupItem
     public class PickupItem : MonoBehaviour
     {
         [HideInInspector] public bool hasUse = false;
-        private bool PickedUp = false;
-        private Vector3 playerOffset = new Vector3(0.69f, -0.25f, 0.3f);
-        private Vector3 additionalDropForce = new Vector3(0f, 0f, 1f);
+        [HideInInspector] public bool PickedUp = false;
+        public bool highlightItem = true;
+        public Vector3 equippedOffset = new Vector3(0.7f, -0.3f, 0.5f);
+
+        [SerializeField] private Vector3 additionalDropForce = new Vector3(0f, 0f, 1f);
         private Rigidbody itemRigidbody;
         private MeshCollider itemMeshCollider;
 
@@ -28,7 +30,6 @@ namespace PickupItem
             if (useScript != null)
             {
                 hasUse = true;
-                
             }
         }
 
@@ -40,11 +41,14 @@ namespace PickupItem
 
         void Update()
         {
-            //If player is within player.getcomponent<Pickup/Use>().PickupRange, highlight the item
+            if (highlightItem)
+            {
+                //If player is within player.getcomponent<Pickup/Use>().PickupRange, highlight the item
+            }
 
             if (PickedUp)
             {
-                transform.localPosition = playerOffset;
+                transform.localPosition = equippedOffset;
                 transform.localRotation = Quaternion.Euler(0f, 0f, 0f);
             }
         }
@@ -93,5 +97,10 @@ namespace PickupItem
         {
             // Possibly just shake the item 
         }
+    }
+
+    interface IUseItem
+    {
+
     }
 }
