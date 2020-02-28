@@ -1,21 +1,21 @@
-﻿using System.Collections.Generic;
+﻿using System.Collections;
 using UnityEngine;
-using UnityEngine.UI;
 using UnityEngine.SceneManagement;
 using UnityEditor;
+using UnityEngine.VFX.
 
 namespace PlayerControl
 {
     public class CharacterControl : MonoBehaviour
     {
         //Grapple
-        SpringJoint PlayerSpringJoint;
-        private float MaxGrappleDistance = 30f;
+        public SpringJoint PlayerSpringJoint;
+        private float MaxGrappleDistance = 25f;
         public float Spring = 10f; //temp
         public float Damper = 5f;  //temp
         LineRenderer LineRender;
-        private Vector3[] linepos = new Vector3[2];
-        private LayerMask GrappleMask; //Set in start
+        public Vector3[] linepos = new Vector3[2];
+        private LayerMask GrappleMask;
 
         //ObjectReferences (Set in Start)
         private static CameraController CameraControlScript;
@@ -28,11 +28,7 @@ namespace PlayerControl
         public static Mesh PlayerCrouchMesh;
         public static Material LineMat;
 
-        //DEBUG
-        //Remember to set in the inspector
-        public Toggle DebugToggle;
-        public GameObject DebugMenu;
-        public Text DebugTextMoveVector;
+        public static 
 
         void Start()
         {
@@ -45,7 +41,7 @@ namespace PlayerControl
             PlayerCapsuleMesh = GetComponent<MeshFilter>().mesh;
             PlayerCrouchMesh = AssetDatabase.LoadAssetAtPath<Mesh>("Assets/Models/suzanne.fbx");
 
-            GrappleMask = LayerMask.GetMask("Terrain", "Default");
+            GrappleMask = LayerMask.GetMask("Terrain", "PickupItem", "Default");
             LineRender = GetComponent<LineRenderer>();
             LineRender.useWorldSpace = true;
             LineMat = LineRender.material;
@@ -55,27 +51,18 @@ namespace PlayerControl
 
         void Update()
         {
-            //DEBUG
-            if (DebugToggle.isOn) 
+            //Debug Keys
+            if (Input.GetKeyDown(KeyCode.Alpha1))
             {
-                DebugMenu.SetActive(true);
-                if (TryGetComponent(out SpringJoint _))
-                {
-                    DebugTextMoveVector.text = "Desired Distance: " + PlayerSpringJoint.maxDistance + "\n" + "Actual Distance: " + Vector3.Distance(PlayerRigidBody.position, linepos[1]);
-                }
-                else
-                {
-                    DebugTextMoveVector.text = "";
-                }
+                CameraControlScript.AddShakeTrauma(3f);
             }
-            else
-            {
-                //DebugMenu.SetActive(false);
-            }
-
-            if (Input.GetKey(KeyCode.Alpha2))
+            if (Input.GetKeyDown(KeyCode.Alpha2))
             {
                 SceneManager.LoadScene(SceneManager.GetActiveScene().buildIndex);
+            }
+            if (Input.GetKeyDown(KeyCode.Alpha3))
+            {
+
             }
 
             //jump
@@ -131,6 +118,14 @@ namespace PlayerControl
             }
         }
 
+        void OnCollisionEnter(Collision collision)
+        {
+            if (collision.gameObject.CompareTag("Respawn"))
+            {
+                SceneManager.LoadScene(SceneManager.GetActiveScene().buildIndex);
+            }
+        }
+
         void FixedUpdate()
         {
             MoveVector.CalculateRaw();
@@ -158,7 +153,6 @@ namespace PlayerControl
                 } 
             }
         }
-
 
         /// <summary>
         /// Creates a spring joint for grappling
@@ -189,7 +183,7 @@ namespace PlayerControl
                 _SpringJoint.enableCollision = true;
             }
 
-            if (CameraControlScript.XRotation > 0f && !(_RayHit.rigidbody == null))
+            if (CameraControlScript.XRotation > -5f || _RayHit.rigidbody != null)
             {
                 _SpringJoint.maxDistance = _RayHit.distance;
             }
@@ -277,7 +271,7 @@ namespace PlayerControl
         public static float GroundFriction = 1f;
         public static float GroundMoveMultiplier = 2.0f;
 
-        public static float AirFriction = 0.2f;
+        public static float AirFriction = 0.12f;
         public static float AirMoveMultiplier = 0.5f;
 
         public static float SlideFriction = 0.1f;

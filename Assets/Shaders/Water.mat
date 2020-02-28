@@ -34,11 +34,15 @@ Material:
     serializedVersion: 3
     m_TexEnvs: []
     m_Floats:
+    - FoamScrollSpeed: 2
+    - RippleIntensity: 0.01
+    - RippleScale: 2.19
+    - RippleSpeed: 2.25
     - Vector1_5F3D85C2: 5
     - Vector1_7D7A9716: 0
     - Vector1_AD89B459: 1
-    - Vector1_D0FF2089: 10
+    - Vector1_D0FF2089: 9
     - Vector1_F803A7EF: 2.25
     m_Colors:
-    - Color_3407E750: {r: 0.16197926, g: 0.33852896, b: 0.6603774, a: 0}
-    - Color_41AAD902: {r: 0.043075807, g: 0.13091347, b: 0.41509426, a: 0}
+    - DeepColour: {r: 0.043075785, g: 0.13091344, b: 0.41509423, a: 0.8745098}
+    - ShallowColour: {r: 0.16197926, g: 0.33852896, b: 0.6603774, a: 0}

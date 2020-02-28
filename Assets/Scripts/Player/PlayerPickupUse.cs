@@ -1,5 +1,4 @@
 ﻿using System.Collections;
-using System.Collections.Generic;
 using UnityEngine;
 
 namespace PlayerControl
@@ -8,7 +7,8 @@ namespace PlayerControl
     {
         static LayerMask PickupMask;
         static Transform CameraFocusTransform;
-        public static float PickupDistance = 5f;
+        public static float pickupDistance = 5f;
+        public static float pickupSphereSize = 0.2f;
         private GameObject PickedUpItem;
 
         void Start()
@@ -34,7 +34,7 @@ namespace PlayerControl
         }
 
         /// <summary>
-        /// Either picks up the item infront of the player or puts it down
+        /// Picks up the item infront of the player or puts it down, depending on whether another pickupitem is being held
         /// </summary>
         public void PickupPutdown()
         {
@@ -42,7 +42,7 @@ namespace PlayerControl
             {
                 Ray PickupRay = new Ray(CameraFocusTransform.position, CameraFocusTransform.rotation * Vector3.forward);
 
-                if (Physics.Raycast(PickupRay, out RaycastHit RayHit, PickupDistance, PickupMask) && RayHit.collider.CompareTag("PickupItem"))
+                if (Physics.SphereCast(PickupRay, pickupSphereSize, out RaycastHit RayHit, pickupDistance, PickupMask) && RayHit.collider.CompareTag("PickupItem"))
                 {
                     PickedUpItem = RayHit.transform.gameObject;
                     PickedUpItem.GetComponent<PickupItem.PickupItem>().PickUp();

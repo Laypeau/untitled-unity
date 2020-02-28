@@ -1,6 +1,4 @@
 ﻿using UnityEngine;
-using System;
-using PickupItem;
 
 namespace PickupItem
 {
@@ -39,6 +37,8 @@ namespace PickupItem
                 reloading = true;
                 Invoke("Reload", reloadTime);
             }
+            Debug.DrawRay(CameraFocusTransform.position, CameraFocusTransform.rotation * Vector3.forward * 100f, Color.red);
+
         }
 
         public override void Use()
@@ -49,8 +49,22 @@ namespace PickupItem
                 {
                     lastUsed = Time.time;
                     GameObject bullet = ObjectPool.Instance.GetBullet();
-                    bullet.GetComponent<Rigidbody>().position = transform.position + (transform.rotation * bulletSpawnOffset);
-                    bullet.GetComponent<Rigidbody>().velocity = transform.rotation * Vector3.forward * bulletSpeed;
+                    bullet.transform.position = transform.position + (transform.rotation * bulletSpawnOffset);
+
+                    // Rotations are dumb
+                    Ray ray = new Ray(CameraFocusTransform.position, CameraFocusTransform.rotation * Vector3.forward);
+                    Quaternion _bulletRot;
+                    if (Physics.Raycast(ray, out RaycastHit rayhit))
+                    {
+                        _bulletRot = Quaternion.LookRotation(rayhit.point - (transform.position + (transform.rotation * bulletSpawnOffset)));
+                        Debug.DrawRay(transform.position + (transform.rotation * bulletSpawnOffset), _bulletRot * Vector3.forward * 100f, Color.yellow, 3f);
+                    }
+                    else
+                    {
+                        _bulletRot = transform.rotation;
+                    }
+                    bullet.GetComponent<Rigidbody>().velocity = _bulletRot * Vector3.forward * bulletSpeed;
+
                     clip -= 1;
                 }
             }

@@ -34,7 +34,7 @@ public class CameraController : MonoBehaviour
     private Transform CameraFocusTransform;
     private Transform CameraTransform;
 
-    private MenuManagementPause MenuManagementPause;
+    private MenuManagement.MenuManager Menu;
 
     void Start()
     {
@@ -43,16 +43,10 @@ public class CameraController : MonoBehaviour
 
     void Update()
     {
-        UpdateCursorLock();
-        if (!MenuManagementPause.IsPaused)
+        if (!Menu.IsPaused)
         {
             RotateByMouse(CameraFocusTransform);
             MoveToFocus(PlayerGameObject.transform);
-        }
-
-        if (Input.GetKeyDown(KeyCode.Alpha1))
-        {
-            TraumaDelta += 5;
         }
 
         //AngleZoom();
@@ -73,25 +67,12 @@ public class CameraController : MonoBehaviour
         CameraFocusTransform = GetComponent<Transform>();
         CameraTransform = CameraFocusTransform.Find("PlayerCamera");
 
-        MenuManagementPause = GameObject.Find("Canvas").GetComponent<MenuManagementPause>();
+        Menu = GameObject.Find("Canvas").GetComponent<MenuManagement.MenuManager>();
     }
 
     /// <summary>
     /// Locks the cursor depending on IsPaused in the MenuManagementPause script is true or not
     /// </summary>
-    public void UpdateCursorLock()
-    {
-        if (MenuManagementPause.IsPaused)
-        {
-            Cursor.lockState = CursorLockMode.None;
-            Cursor.visible = true;
-        }
-        else
-        {
-            Cursor.lockState = CursorLockMode.Locked;
-            Cursor.visible = false;
-        }
-    }
 
     /// <summary>
     /// Lerps the camera focus to the input transform by independent Y and XZ values
@@ -113,9 +94,14 @@ public class CameraController : MonoBehaviour
         XRotation += Input.GetAxis("Mouse Y") * SensitivityY;  //Up is negative, Down is positive. ¯\_(ツ)_/¯
         XRotation = Mathf.Clamp(XRotation, -90f, 90f);
 
-        YRotation += Input.GetAxis("Mouse X") * SensitivityX;
+        YRotation = YRotation%360f + Input.GetAxis("Mouse X") * SensitivityX;
 
         _FocusTransform.rotation = Quaternion.Euler(XRotation, YRotation, 0f);
+    }
+
+    public void AddShakeTrauma(float _TraumaAmount)
+    {
+        Trauma += _TraumaAmount;
     }
 
     /// <summary>

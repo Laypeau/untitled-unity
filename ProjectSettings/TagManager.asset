@@ -6,6 +6,8 @@ TagManager:
   tags:
   - Terrain
   - PickupItem
+  - NonGrapple
+  - Target
   layers:
   - Default
   - TransparentFX
@@ -20,8 +22,8 @@ TagManager:
   - 
   - Terrain
   - PickupItem
-  - 
-  - 
+  - NonGrapple
+  - Target
   - Post Processing
   - 
   - 

@@ -3,28 +3,33 @@ using UnityEngine;
 using UnityEngine.Diagnostics;
 using UnityEngine.SceneManagement;
 
-public class MenuManagementGeneral : MonoBehaviour
+namespace MenuManagement
 {
-    public void GoToNextSceneInIndex()
+    public class MenuManagementGeneral : MonoBehaviour
     {
-        SceneManager.LoadScene(SceneManager.GetActiveScene().buildIndex + 1);
-    }
+        // Make sure this class extends monobehaviour, otherwise the main menu won't work because unity ui is dumb
 
-    public void ApplicationQuit()
-    {
-        Application.Quit();
-        Debug.Log("Pretend the game quit");
-    }
+        public static void GoToNextSceneInIndex()
+        {
+            SceneManager.LoadScene(SceneManager.GetActiveScene().buildIndex + 1);
+        }
 
-    public void OpenMainMenu()
-    {
-        Time.timeScale = 1f;
-        SceneManager.LoadScene(0);
-    }
+        /// <summary>
+        /// Quits the application
+        /// </summary>
+        public static void ApplicationQuit()
+        {
+            Application.Quit();
+            Debug.Log("Game quit successfully");
+        }
 
-    public void ForceCrash()
-    {
-        //DO NOT CRASH THE EDITOR
-        Utils.ForceCrash(ForcedCrashCategory.FatalError);
+        /// <summary>
+        /// Loads the scene at index 0
+        /// </summary>
+        public static void OpenMainMenu()
+        {
+            Time.timeScale = 1f;
+            SceneManager.LoadScene(0);
+        }
     }
 }

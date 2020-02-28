@@ -1,6 +1,4 @@
-﻿using System.Collections;
-using System.Collections.Generic;
-using UnityEngine;
+﻿using UnityEngine;
 
 namespace PickupItem
 {
@@ -10,11 +8,11 @@ namespace PickupItem
         private Material defaultMaterial;
         public Material reloadMaterial;
 
-        public int clipSize = 3;
-        public int clip = 3;
-        public float reloadTime = 5f;
+        public int clipSize = 1;
+        public int clip = 1;
+        public float reloadTime = 3f;
         [HideInInspector] public bool reloading = false;
-        public float useTime = 4f;
+        public float useTime = 0f;
         [HideInInspector] private float lastUsed = 0f;
 
         /// <summary>
@@ -32,10 +30,10 @@ namespace PickupItem
         /// <summary>
         /// How many degrees will the spread 
         /// </summary>
-        public Vector3 bulletSpread = new Vector3(0f, 0f, 0f);
         /// <summary>
         /// Knockback to apply to the player rigidbody, in this gameobject's local space
         /// </summary>
+        public float spread = 3f;
         public Vector3 recoil = new Vector3(0f, 0f, -20f);
 
         private Rigidbody playerRigidbody;
@@ -67,10 +65,23 @@ namespace PickupItem
                     {
                         GameObject bullet = ObjectPool.Instance.GetBullet();
                         bullet.GetComponent<Rigidbody>().position = transform.position + (CameraFocusTransform.rotation * bulletSpawnOffset);
-                        bullet.GetComponent<Rigidbody>().velocity = CameraFocusTransform.rotation * Vector3.forward * bulletSpeed;
+                        
+                        Ray ray = new Ray(CameraFocusTransform.position, CameraFocusTransform.rotation * Vector3.forward);
+                        Quaternion _bulletRot;
+                        if (Physics.Raycast(ray, out RaycastHit rayhit))
+                        {
+                            _bulletRot = Quaternion.LookRotation(rayhit.point - (transform.position + (transform.rotation * bulletSpawnOffset)));
+                            Debug.DrawRay(transform.position + (transform.rotation * bulletSpawnOffset), _bulletRot * Vector3.forward * 100f, Color.yellow, 3f);
+                        }
+                        else
+                        {
+                            _bulletRot = transform.rotation;
+                        }
+                        bullet.GetComponent<Rigidbody>().velocity = _bulletRot * Quaternion.Euler(Random.Range(-spread, spread), Random.Range(-spread, spread), Random.Range(-spread, spread)) * Vector3.forward * bulletSpeed;
                     }
                     clip -= 1;
 
+                    CameraFocusTransform.GetComponent<CameraController>().AddShakeTrauma(4f);
                     playerRigidbody.AddForce(transform.rotation * recoil, ForceMode.VelocityChange);
                 }
             }
