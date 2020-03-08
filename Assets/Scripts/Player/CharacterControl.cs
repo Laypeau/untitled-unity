@@ -2,7 +2,6 @@
 using UnityEngine;
 using UnityEngine.SceneManagement;
 using UnityEditor;
-using UnityEngine.VFX.
 
 namespace PlayerControl
 {
@@ -28,7 +27,7 @@ namespace PlayerControl
         public static Mesh PlayerCrouchMesh;
         public static Material LineMat;
 
-        public static 
+        public ParticleSystem adssad;
 
         void Start()
         {
@@ -183,7 +182,7 @@ namespace PlayerControl
                 _SpringJoint.enableCollision = true;
             }
 
-            if (CameraControlScript.XRotation > -5f || _RayHit.rigidbody != null)
+            if (CameraControlScript.XRotation > -25f || _RayHit.rigidbody != null)
             {
                 _SpringJoint.maxDistance = _RayHit.distance;
             }
@@ -269,7 +268,7 @@ namespace PlayerControl
         public static float RatioOfVerticalToNormal = 0.75f;
 
         public static float GroundFriction = 1f;
-        public static float GroundMoveMultiplier = 2.0f;
+        public static float GroundMoveMultiplier = 1.7f;
 
         public static float AirFriction = 0.12f;
         public static float AirMoveMultiplier = 0.5f;

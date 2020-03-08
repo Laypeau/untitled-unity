@@ -75,6 +75,7 @@ Material:
     - _WorkflowMode: 1
     - _ZWrite: 1
     m_Colors:
+    - Color_5F4B63F8: {r: 0.8517474, g: 1, b: 0, a: 1}
     - Colour: {r: 1, g: 0.5019608, b: 0, a: 1}
     - _BaseColor: {r: 0.5, g: 0.5, b: 0.5, a: 1}
     - _Color: {r: 0.5, g: 0.5, b: 0.5, a: 1}
