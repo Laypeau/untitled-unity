@@ -16,10 +16,13 @@ This is a first person shooter in which you hunt down and destroy all the godots
 ``2 -- Reset Scene``  
   
 [Functions Writeup](https://github.com/Nathan-Duong/untitled-unity/blob/master/FunctionsWriteup.md)  
+
 To view code, clone this repository to your computer and open it as a unity project  
   
-**Coming "soon"**
+**To add**
 - More levels (+ level select menu)
 - More weapons
-- MORE SHADERS!!!
-
+- More shaders
+- More shaders
+- More shaders
+- An actual end/high-score screen
