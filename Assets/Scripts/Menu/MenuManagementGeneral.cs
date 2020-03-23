@@ -7,14 +7,14 @@ namespace MenuManagement
 {
     public class MenuManagementGeneral : MonoBehaviour
     {
-        // Make sure this class extends monobehaviour, otherwise the main menu won't work because unity ui is dumb
+        // Make sure this class extends monobehaviour, otherwise the main menu won't work because unity ui is dumb / I'm bad
 
-        public static void GoToNextSceneInIndex()
+        public void GoToNextSceneInIndex()
         {
             SceneManager.LoadScene(SceneManager.GetActiveScene().buildIndex + 1);
         }
 
-        public static void ApplicationQuit()
+        public void ApplicationQuit()
         {
             Application.Quit();
             Debug.Log("Game quit successfully");
@@ -23,7 +23,7 @@ namespace MenuManagement
         /// <summary>
         /// Loads the scene called MainMenu
         /// </summary>
-        public static void OpenMainMenu()
+        public void OpenMainMenu()
         {
             Time.timeScale = 1f;
             SceneManager.LoadScene("MainMenu");
