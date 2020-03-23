@@ -14,9 +14,6 @@ namespace MenuManagement
             SceneManager.LoadScene(SceneManager.GetActiveScene().buildIndex + 1);
         }
 
-        /// <summary>
-        /// Quits the application
-        /// </summary>
         public static void ApplicationQuit()
         {
             Application.Quit();
@@ -24,12 +21,12 @@ namespace MenuManagement
         }
 
         /// <summary>
-        /// Loads the scene at index 0
+        /// Loads the scene called MainMenu
         /// </summary>
         public static void OpenMainMenu()
         {
             Time.timeScale = 1f;
-            SceneManager.LoadScene(0);
+            SceneManager.LoadScene("MainMenu");
         }
     }
 }

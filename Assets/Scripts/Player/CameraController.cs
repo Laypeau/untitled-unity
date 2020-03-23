@@ -112,7 +112,7 @@ public class CameraController : MonoBehaviour
     public void DoCameraShake()
 
     {
-        Trauma = Mathf.Clamp(Trauma + TraumaDelta, 0f, 10f);
+        Trauma = Mathf.Clamp(Trauma + TraumaDelta, 0f, 10f);  //Probably remap it from 0-100
         TraumaDelta = 0;
 
         //ranges from -0.5 to 0.5

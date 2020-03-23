@@ -10,8 +10,7 @@ namespace PickupItem
     /// </summary>
     public class PickupItem : MonoBehaviour
     {
-        [HideInInspector] public bool hasUse = false;
-        [HideInInspector] public bool PickedUp = false;
+
         public bool highlightItem = true;
         /// <summary>
         /// Offset of the PickupItem from the camerafocus transform when picked up
@@ -23,6 +22,8 @@ namespace PickupItem
         public Vector3 equippedRotation = new Vector3(0f, 0f, 0f);
         public Vector3 dropForce = new Vector3(0f, 0f, 2f);
 
+        [HideInInspector] public bool hasUse = false;
+        [HideInInspector] public bool PickedUp = false;
         [HideInInspector] public Rigidbody itemRigidbody;
         /// <summary>
         /// By default is some kind of mesh collider, but can be overridden

@@ -38,7 +38,7 @@ namespace PlayerControl
             PlayerTransform = GetComponent<Transform>();
             PlayerCapsuleCollider = GetComponent<CapsuleCollider>();
             PlayerCapsuleMesh = GetComponent<MeshFilter>().mesh;
-            PlayerCrouchMesh = AssetDatabase.LoadAssetAtPath<Mesh>("Assets/Models/suzanne.fbx");
+            //PlayerCrouchMesh = AssetDatabase.LoadAssetAtPath<Mesh>("Assets/Models/suzanne.fbx");
 
             GrappleMask = LayerMask.GetMask("Terrain", "PickupItem", "Default");
             LineRender = GetComponent<LineRenderer>();
@@ -61,7 +61,7 @@ namespace PlayerControl
             }
             if (Input.GetKeyDown(KeyCode.Alpha3))
             {
-
+                Debug.Log("KeyCode.Alpha3");
             }
 
             //jump
@@ -72,7 +72,7 @@ namespace PlayerControl
 
             // Create SpringJoint
             Ray PlayerDirection = new Ray(CameraFocusTransform.position, CameraFocusTransform.rotation * Vector3.forward);
-            if (Input.GetMouseButtonDown(1) && Physics.SphereCast(PlayerDirection, 0.2f, out RaycastHit RayHit, MaxGrappleDistance, GrappleMask))
+            if (Input.GetMouseButtonDown(1) && Physics.SphereCast(PlayerDirection, 0.2f, out RaycastHit RayHit, MaxGrappleDistance, GrappleMask) && !RayHit.transform.gameObject.CompareTag("NonGrapple"))
             {
                 CreateSpringJoint(out PlayerSpringJoint, RayHit);
             }
@@ -182,7 +182,7 @@ namespace PlayerControl
                 _SpringJoint.enableCollision = true;
             }
 
-            if (CameraControlScript.XRotation > -25f || _RayHit.rigidbody != null)
+            if (CameraControlScript.XRotation > -7f || _RayHit.rigidbody != null)
             {
                 _SpringJoint.maxDistance = _RayHit.distance;
             }

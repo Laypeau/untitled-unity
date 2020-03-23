@@ -4,17 +4,14 @@
 	- Uses Unity's raw input axis, but could potentially take analog input
 - ApplyMovement() makes sure the Rigidbody.AddForce doesn't exceed the MaxMoveMagnitude Property
 - Does not follow Microsoft's C# formatting conventions
-
 ### FindFloorAverageDistance Function
 - Creates a ring of downward raycasts around a point in 3D space, starting at positive Z and going clockwise. Returns the average distance between the raycasts and any colliders.
 	- Has an option to toggle an additional raycast downwards from the centre of the point
 - Potential use for some kind of inverse kinematics driven character controller
-
 ### DoubleTapHandler Class
 - An instantiable class that compares the times of the same button being pressed twice
 	- You have to instantiate it for each key you are testing
 - It sucks
-
 ### CreateSpringJoint Function
 - Instantiates a springjoint component on the parent
 - Sets the springjoint parameters based an input euler rotation
@@ -38,14 +35,21 @@
 
 
 # PickupItem Namespace
-## PickupItem Class
+### PickupItem Class
 - Communicates with PlayerPickUpUse on the item's side to pick up and put down the item
 	- In this case, it just turns it into a child of the player gameobject, but this code can be easily redone by changing the PickUp and PutDown functions
-## PlayerPickupUse Class
+### PlayerPickupUse Class
 - Attached to the player gameobject to pick up and put down a PickupItem
 - This script does the raycasting to find a pickup item and calls the PickUp function from it's PickupItem script
 - Probably not worth reusing the script. Rework it.
 	- The PickupPutdown function is quite redundant
-## UseItem class
+	- Make it interact with the PickupItem class more
+### UseItem class
 - An abstract class that contains the usage function of a PickupItem
 	- Extend this class and override the function Use to add custom functionality to a UseItem
+
+# MenuManagement Namespace
+- Oh gosh, it's terrible
+- Don't use it
+### SlowTime Coroutine
+- Lerps Time.timeScale to a desired value over a number of seconds

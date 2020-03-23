@@ -31,6 +31,10 @@ namespace PickupItem
             Destroy(gameObject);
         }
 
+        /// <summary>
+        /// Adds an explosion force to all detected rigidbodies within an OverlapSphere.
+        /// If any collider tagged as "Target" is detected, it's TargetExplode.Explode() function is called
+        /// </summary>
         public void Explode()
         {
             Collider[] _ColliderList = Physics.OverlapSphere(transform.position, explodeRadius, explodeMask, QueryTriggerInteraction.Ignore);
@@ -42,7 +46,7 @@ namespace PickupItem
                 }
                 else if(_ColliderList[i].CompareTag("Target"))
                 {
-                    _ColliderList[i].GetComponent<TargetExplode>().Explode(transform.position, explodeRadius);
+                    _ColliderList[i].GetComponent<TargetExplode>().Explode(transform.position);
                 }
             }
         }
